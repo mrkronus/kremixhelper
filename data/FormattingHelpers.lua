@@ -1,0 +1,101 @@
+--[[============================================================================
+  NumberFormatting.lua
+  Purpose:
+    - Format numbers with commas
+    - Format numbers with K/M suffixes and commas
+    - Wrap text in WoW color codes
+============================================================================]]--
+
+local _, Addon = ...
+
+
+
+--------------------------------------------------------------------------------
+-- Comma Formatting
+--------------------------------------------------------------------------------
+
+---Format a number with commas as thousands separators.
+---@param num number
+---@return string
+function FormatWithCommas(num)
+    local s = tostring(math.floor(num or 0))
+
+    -- Repeatedly insert commas every three digits from the right
+    while true do
+        local new, k = s:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+        s = new
+        if k == 0 then break end
+    end
+
+    return s
+end
+
+
+
+--------------------------------------------------------------------------------
+-- Thousands / Millions Formatting
+--------------------------------------------------------------------------------
+
+---Format a number with K/M rounding and commas.
+---@param num number
+---@return string
+function FormatWithCommasToThousands(num)
+    if not num then
+        return "0"
+    end
+
+    if num < 1000 then
+        -- Just the raw number
+        return tostring(num)
+
+    elseif num < 1000000 then
+        -- Thousands: always round to K with 2 decimals
+        return string.format("%.2fK", num / 1000)
+
+    else
+        -- Millions: round to M with 2 decimals, add commas
+        local millions  = num / 1000000
+        local formatted = string.format("%.2fM", millions)
+
+        -- Insert commas into the integer part before the decimal
+        local int, frac = formatted:match("^(%d+)(%.%d+M)$")
+        if int then
+            repeat
+                int, k = int:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+            until k == 0
+            return int .. frac
+        end
+
+        return formatted
+    end
+end
+
+
+
+--------------------------------------------------------------------------------
+-- Colorization
+--------------------------------------------------------------------------------
+
+---Wrap text in WoW color codes using RGB values or a RAID_CLASS_COLORS table.
+---@param text string
+---@param r number|table Either red (0–1) or a table with .r/.g/.b
+---@param g number? Green (0–1) if r is a number
+---@param b number? Blue (0–1) if r is a number
+---@return string
+---@diagnostic disable-next-line: lowercase-global
+function colorizeRGB(text, r, g, b)
+    local red, green, blue
+
+    if type(r) == "table" then
+        -- Assume it's a RAID_CLASS_COLORS entry
+        red, green, blue = r.r, r.g, r.b
+    else
+        red, green, blue = r, g, b
+    end
+
+    if not (red and green and blue) then
+        return text -- fallback: no color
+    end
+
+    return ("|cff%02x%02x%02x%s|r"):format(red * 255, green * 255, blue * 255, text)
+end

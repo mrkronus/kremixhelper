@@ -1,0 +1,46 @@
+## Interface: 110205
+## Title: KRemixHelper
+## X-Title-With-Spaces: K Remix Helper
+## Author: Kronus
+## Notes: K-suite addon to help with remix things
+## Version: 11.2.5.1
+## X-Release-Type: beta
+
+## IconTexture: Interface\Icons\achievement_raid_argusraid
+## SavedVariables: KRemixHelperDB
+
+## Dependencies: 
+## OptionalDeps: Ace3, KDebug
+## LoadOnDemand: 0
+
+#@no-lib-strip@
+Embeds.xml
+#@end-no-lib-strip@
+
+libs\KLibLite.lua
+AddonSettings.lua
+
+# Ace / Broilerplate
+ace\AceAddon.lua
+ace\MinimapTooltip.lua
+ace\MinimapIcon.lua
+ui\MinimapTooltipProvider.lua
+
+# Data
+data\ArtifactPowers.lua
+data\FormattingHelpers.lua
+
+# Stats
+modules\stats\ThreadsTracker.lua
+modules\stats\StatsTracker.lua
+
+# Unit Tooltips
+ui\UnitTooltip.lua
+
+# Gear Guard
+modules\gearguard\GearGuard.lua
+modules\gearguard\BagOverlay.lua
+
+# Auto Scrapping
+modules\AutoScrapper.lua
+ui\AutoScrapperFrame.lua
