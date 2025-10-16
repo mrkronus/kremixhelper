@@ -1,8 +1,8 @@
-# KRemix Helper
+# K Remix Helper
 
 ### Make your Legion Remix adventure smoother, faster, and less of a grind.
 
-**KRemix Helper** is a lightweight quality‑of‑life addon built to take the hassle out of Legion Remix. It quietly works in the background to automate chores, highlight important gear, and keep you focused on the fun parts of the event.
+**K Remix Helper** is a lightweight quality‑of‑life addon built to take the hassle out of Legion Remix. It quietly works in the background to automate chores, highlight important gear, and keep you focused on the fun parts of the event.
 
 ---
 

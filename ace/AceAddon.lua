@@ -4,25 +4,24 @@
     - Core addon initialization using Ace3
     - Registers options, defaults, and minimap toggle
     - Wires into KDebug if available
-============================================================================]]--
+============================================================================]] --
 
-local _, Addon = ...
+local _, Addon                 = ...
 
-local kprint          = Addon.kprint
-local Colors          = Addon.Colors
-local KDebug_Register = Addon.KDebug_Register
+local kprint                   = Addon.kprint
+local Colors                   = Addon.Colors
+local KDebug_Register          = Addon.KDebug_Register
 
-local addonName              = Addon.Settings.AddonName
-local addonVersion           = Addon.Settings.Version
-local addonNameWithSpaces    = Addon.Settings.AddonNameWithSpaces
-local addonNameWithIcon      = Addon.Settings.AddonNameWithIcon
-local addonDBName            = Addon.Settings.AddonDBName
+local addonName                = Addon.Settings.AddonName
+local addonVersion             = Addon.Settings.Version
+local addonNameWithSpaces      = Addon.Settings.AddonNameWithSpaces
+local addonNameWithIcon        = Addon.Settings.AddonNameWithIcon
+local addonDBName              = Addon.Settings.AddonDBName
 local addonOptionsSlashCommand = Addon.Settings.AddonOptionsSlashCommand
 
 ---@class LibAceAddon : AceAddon
-local LibAceAddon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceConsole-3.0", "AceEvent-3.0")
-Addon.LibAceAddon = LibAceAddon
-
+local LibAceAddon              = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceConsole-3.0", "AceEvent-3.0")
+Addon.LibAceAddon              = LibAceAddon
 
 
 --------------------------------------------------------------------------------
@@ -49,14 +48,63 @@ Addon.AceOptions = {
             get   = "ShouldHideMinimapButton",
             set   = "ToggleMinimapButton",
         },
+        scrapping = {
+            type    = "group",
+            name    = "Scrapping",
+            order   = 10,
+            inline  = true,
+            args  = {
+                maxQuality = {
+                    type   = "select",
+                    name   = "Maximum Item Quality To Scrap",
+                    desc   = "Only scrap items up to this quality.",
+                    values = function()
+                        local t = {}
+                        for q = Enum.ItemQuality.Common, Enum.ItemQuality.Epic do
+                            local name  = _G["ITEM_QUALITY" .. q .. "_DESC"]
+                            local color = ITEM_QUALITY_COLORS[q]
+                            t[q]        = color.hex .. name .. "|r"
+                        end
+                        return t
+                    end,
+                    get    = function() return LibAceAddon.db.profile.maxQuality end,
+                    set    = function(_, val) LibAceAddon.db.profile.maxQuality = val end,
+                    order  = 1,
+                },
+                spacer = {
+                    type  = "description",
+                    name  = " ",
+                    order = 2,
+                },
+                autoFill = {
+                    type  = "toggle",
+                    name  = "Auto Fill on Open",
+                    desc  = "Automatically fill the scrapper with eligible items when opened.",
+                    get   = function() return LibAceAddon.db.profile.autoFill end,
+                    set   = function(_, val) LibAceAddon.db.profile.autoFill = val end,
+                    order = 3,
+                },
+                autoScrapAll = {
+                    type  = "toggle",
+                    name  = "Auto Scrap All",
+                    desc  = "Continuously top up the scrapper until all items are scrapped.",
+                    get   = function() return LibAceAddon.db.profile.autoScrapAll end,
+                    set   = function(_, val) LibAceAddon.db.profile.autoScrapAll = val end,
+                    order = 4,
+                },
+            },
+        },
     },
 }
 
 Addon.AceOptionsDefaults = {
     profile = {
-        -- Do not remove! Registered with KDebug
-        -- NOTE: Not used directly by this addon
         showDebugOutput = false,
+
+        -- Scrapping defaults
+        autoFill        = true,
+        autoScrapAll    = false,
+        maxQuality      = Enum.ItemQuality.Rare,
     },
     global = {
         minimap = {
@@ -67,7 +115,6 @@ Addon.AceOptionsDefaults = {
         },
     },
 }
-
 
 
 --------------------------------------------------------------------------------
@@ -86,8 +133,6 @@ function LibAceAddon:GetDBDataVersion()
     end
     return self.db.profile.dataVersion
 end
-
-
 
 --------------------------------------------------------------------------------
 -- Minimap Button Toggles
@@ -113,8 +158,6 @@ end
 function LibAceAddon:ShouldShowDebugOutput(_)
     return self.db.profile.showDebugOutput
 end
-
-
 
 --------------------------------------------------------------------------------
 -- Addon Lifecycle
