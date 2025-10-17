@@ -1,35 +1,31 @@
 --[[-----------------------------------------------------------------------------
-  AutoScrapperFrame.lua (patched)
+  AutoScrapperFrame.lua
   Purpose:
-    - Side panel UI for scrapping, now cleanly delegates to ScrappingUtils
+    - Side panel UI for scrapping, delegates to AutoScrapper core
     Provides:
       - Quality dropdown
       - Scroll grid of scrappable items
       - Fill All button
       - Auto Fill on Open checkbox
       - Auto Scrap All checkbox
+      - Protect Higher iLvl Items checkbox
   Notes:
-    - Uses GetCurrentPendingScrapItemLocationByIndex for pending slots
-    - Defers slot filling to next frame to avoid race/taint
-    - Adds InCombatLockdown guards
-    - Ready to read/write persisted settings via AceDB when wired
--------------------------------------------------------------------------------]]
+    - Calls AutoScrapper:FillNextBatch() only on open, Fill button, or empty
+    - Uses AceDB profile values if available
+-----------------------------------------------------------------------------]]
 
 local _, Addon = ...
 
-local AutoScrapper   = Addon.AutoScrapper
-local ScrappingUtils = Addon.ScrappingUtils
+local kprint = Addon.Settings.kprint
+local AutoScrapper = Addon.AutoScrapper
 
 --------------------------------------------------------------------------------
 -- Constants
 --------------------------------------------------------------------------------
 
-local SCRAPPER_FRAME_WIDTH = 325
-local GRID_STRIDE          = 7
-local ICON_FALLBACK        = 134400
-
--- Pending slots constant (kept local to avoid global pollution)
-local MAX_PENDING_SLOTS = 9
+local SCRAPPER_FRAME_WIDTH      = 325
+local GRID_STRIDE               = 7
+local SCRAPPING_MACHINE_SLOTS   = 9
 
 --------------------------------------------------------------------------------
 -- AutoScrapperFrame
@@ -48,42 +44,24 @@ Addon.AutoScrapperFrame = AutoScrapperFrame
 -- Helpers (settings & persistence)
 --------------------------------------------------------------------------------
 
----Get the addon AceDB profile (if available), else fallback to legacy settings.
----@return table profile
 local function GetProfile()
     local ace = Addon.LibAceAddon
     if ace and ace.db and ace.db.profile then
         return ace.db.profile
     end
-    -- Fallback to legacy in-memory settings for now
-    return AutoScrapper and AutoScrapper.settings or {}
+    return AutoScrapper.settings
 end
 
----Convenience getters/setters for settings (reads AceDB profile if present).
 local function GetAutoFill()
     local p = GetProfile()
-    return (p.autoFill ~= nil) and p.autoFill or (AutoScrapper.settings.autoFill or false)
+    return (p.autoFillScrapper ~= nil) and p.autoFillScrapper or AutoScrapper.settings.autoFillScrapper
 end
 local function SetAutoFill(val)
     local ace = Addon.LibAceAddon
     if ace and ace.db and ace.db.profile then
-        ace.db.profile.autoFill = val
-    else
-        AutoScrapper.settings.autoFill = val
+        ace.db.profile.autoFillScrapper = val
     end
-end
-
-local function GetAutoScrapAll()
-    local p = GetProfile()
-    return (p.autoScrapAll ~= nil) and p.autoScrapAll or (AutoScrapper.settings.autoScrapAll or false)
-end
-local function SetAutoScrapAll(val)
-    local ace = Addon.LibAceAddon
-    if ace and ace.db and ace.db.profile then
-        ace.db.profile.autoScrapAll = val
-    else
-        AutoScrapper.settings.autoScrapAll = val
-    end
+    AutoScrapper.settings.autoFillScrapper = val
 end
 
 local function GetMaxQuality()
@@ -98,15 +76,25 @@ local function SetMaxQuality(q)
     AutoScrapper.settings.maxQuality = q
 end
 
+local function GetProtectHigherIlvl()
+    local p = GetProfile()
+    return (p.protectHigherIlvl ~= nil) and p.protectHigherIlvl or AutoScrapper.settings.protectHigherIlvl
+end
+local function SetProtectHigherIlvl(val)
+    local ace = Addon.LibAceAddon
+    if ace and ace.db and ace.db.profile then
+        ace.db.profile.protectHigherIlvl = val
+    end
+    AutoScrapper.settings.protectHigherIlvl = val
+end
+
 --------------------------------------------------------------------------------
--- Event Handlers
+-- Event Handlers for item buttons
 --------------------------------------------------------------------------------
 
 local function OnClick(btn)
     if InCombatLockdown() then return end
-    if ScrappingUtils then
-        ScrappingUtils:ScrapItemFromBag(btn.bag, btn.slot)
-    end
+    AutoScrapper:ScrapItemFromBag(btn.bag, btn.slot)
 end
 
 local function OnEnter(btn)
@@ -123,33 +111,28 @@ end
 -- Initialization
 --------------------------------------------------------------------------------
 
----Initialize the AutoScrapper side panel and wire up UI elements.
 function AutoScrapperFrame:Initialize()
     if self.frame then return end
     local blizzardScrappingFrame = ScrappingMachineFrame
     if not blizzardScrappingFrame then return end
-
     if InCombatLockdown() then return end
 
-    --------------------------------------------------------------------------------
     -- Frame container
-    --------------------------------------------------------------------------------
     local frame = CreateFrame("Frame", nil, blizzardScrappingFrame, "InsetFrameTemplate")
     frame:SetSize(SCRAPPER_FRAME_WIDTH, blizzardScrappingFrame:GetHeight())
     frame:SetPoint("TOPLEFT", blizzardScrappingFrame, "TOPRIGHT", 5, 0)
     frame:Hide()
     self.frame = frame
 
-    --------------------------------------------------------------------------------
     -- Quality dropdown
-    --------------------------------------------------------------------------------
     local qualityLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     qualityLabel:SetPoint("TOPLEFT", 15, -30)
     qualityLabel:SetText("Maximum quality items to scrap")
 
+    local owner = self
     local dropdown = CreateFrame("Frame", "AutoScrapperQualityDropdown", frame, "UIDropDownMenuTemplate")
     dropdown:SetPoint("TOPLEFT", qualityLabel, "BOTTOMLEFT", -20, -5)
-    UIDropDownMenu_SetWidth(dropdown, 150)
+    UIDropDownMenu_SetWidth(dropdown, 120)
     UIDropDownMenu_Initialize(dropdown, function(_, level)
         for q = Enum.ItemQuality.Common, Enum.ItemQuality.Epic do
             local name  = _G["ITEM_QUALITY" .. q .. "_DESC"]
@@ -160,118 +143,74 @@ function AutoScrapperFrame:Initialize()
             info.func   = function()
                 SetMaxQuality(q)
                 UIDropDownMenu_SetSelectedValue(dropdown, q)
-                self:Refresh()
+                owner:ReevaluateScrapper()
             end
             UIDropDownMenu_AddButton(info, level)
         end
     end)
     UIDropDownMenu_SetSelectedValue(dropdown, GetMaxQuality())
 
-    --------------------------------------------------------------------------------
-    -- Checkboxes
-    --------------------------------------------------------------------------------
-    local autoFillCheck = CreateFrame("CheckButton", nil, frame, "ChatConfigCheckButtonTemplate")
-    autoFillCheck:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 15, -35)
-    autoFillCheck.Text:SetText("Auto Fill on Open")
-    autoFillCheck:SetChecked(GetAutoFill())
-    autoFillCheck:SetScript("OnClick", function(btn)
-        SetAutoFill(btn:GetChecked())
-    end)
-
     local autoScrapCheck = CreateFrame("CheckButton", nil, frame, "ChatConfigCheckButtonTemplate")
-    autoScrapCheck:SetPoint("BOTTOMLEFT", autoFillCheck, "TOPLEFT", 0, 5)
-    autoScrapCheck.Text:SetText("Auto Scrap All")
-    autoScrapCheck:SetChecked(GetAutoScrapAll())
+    autoScrapCheck:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 15, 0)
+    autoScrapCheck.Text:SetText("Auto Fill When Empty")
+    autoScrapCheck:SetChecked(GetAutoFill())
     autoScrapCheck:SetScript("OnClick", function(btn)
-        SetAutoScrapAll(btn:GetChecked())
+        local isChecked = btn:GetChecked()
+        SetAutoFill(isChecked)
+        if isChecked then
+            self:ReevaluateScrapper()
+        end
     end)
 
-    --------------------------------------------------------------------------------
+    local protectCheck = CreateFrame("CheckButton", nil, frame, "ChatConfigCheckButtonTemplate")
+    protectCheck:SetPoint("TOPLEFT", autoScrapCheck, "BOTTOMLEFT", 0, 0)
+    protectCheck.Text:SetText("Keep Higher iLvl Items")
+    protectCheck:SetChecked(GetProtectHigherIlvl())
+    protectCheck:SetScript("OnClick", function(btn)
+        SetProtectHigherIlvl(btn:GetChecked())
+        self:ReevaluateScrapper()
+    end)
+
     -- Scroll frame grid
-    --------------------------------------------------------------------------------
     local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 15, -150)
+    scroll:SetPoint("TOPLEFT", 15, -180)
     scroll:SetPoint("BOTTOMRIGHT", -35, 40)
     self.scrollFrame = scroll
-
     self.content = CreateFrame("Frame", nil, self.scrollFrame)
     self.scrollFrame:SetScrollChild(self.content)
 
-    --------------------------------------------------------------------------------
     -- Fill All button
-    --------------------------------------------------------------------------------
     local fillAllBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     fillAllBtn:SetSize(120, 22)
     fillAllBtn:SetPoint("BOTTOM", frame, "BOTTOM", 0, 10)
     fillAllBtn:SetText("Fill All")
     fillAllBtn:SetScript("OnClick", function()
         if InCombatLockdown() then return end
-
-        self:Refresh()
-
-        C_ScrappingMachineUI.RemoveAllScrapItems()
-
-        -- Defer filling to next frame to avoid racing the secure handler
-        C_Timer.After(0, function()
-            if not ScrappingMachineFrame or not ScrappingMachineFrame:IsShown() then return end
-            for _, item in ipairs(AutoScrapper:GetScrappableItems()) do
-                ScrappingUtils:ScrapItemFromBag(item.bag, item.slot)
-            end
-        end)
+        AutoScrapper:FillNextBatch()
     end)
+    self.fillAllBtn = fillAllBtn
 
-    --------------------------------------------------------------------------------
-    -- Hooks
-    --------------------------------------------------------------------------------
+    -- Hooks to Blizzard scrapper
     blizzardScrappingFrame:HookScript("OnShow", function()
-        if InCombatLockdown() then return end
         self.frame:Show()
-        self:Refresh()
         if GetAutoFill() then
-            C_ScrappingMachineUI.RemoveAllScrapItems()
-            C_Timer.After(0, function()
-                if not ScrappingMachineFrame or not ScrappingMachineFrame:IsShown() then return end
-                for _, item in ipairs(AutoScrapper:GetScrappableItems()) do
-                    ScrappingUtils:ScrapItemFromBag(item.bag, item.slot)
-                end
-            end)
+            AutoScrapper:FillNextBatch()
         end
     end)
 
     blizzardScrappingFrame:HookScript("OnHide", function()
         self.frame:Hide()
     end)
-
-    -- Hook Scrap button for Auto Scrap All (top-up after Blizzard triggers)
-    ScrappingMachineFrame.ScrapButton:HookScript("OnClick", function()
-        if not GetAutoScrapAll() then return end
-        if InCombatLockdown() then return end
-
-        -- After the click, keep topping up as long as panel is open
-        C_Timer.After(0, function()
-            if not ScrappingMachineFrame or not ScrappingMachineFrame:IsShown() then return end
-            ScrappingUtils:AutoScrap()
-        end)
-    end)
-
-    -- Refresh on bag updates
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("BAG_UPDATE_DELAYED")
-    f:SetScript("OnEvent", function()
-        if blizzardScrappingFrame:IsShown() then
-            self:Refresh()
-        end
-    end)
 end
+
 --------------------------------------------------------------------------------
--- Refresh
+-- Refresh grid of scrappable items
 --------------------------------------------------------------------------------
 
----Refresh the scroll grid of scrappable items.
 function AutoScrapperFrame:Refresh()
     if InCombatLockdown() then return end
 
-    local items = AutoScrapper:GetScrappableItems()
+    local items = AutoScrapper:GetScrappableItems(GetMaxQuality(), AutoScrapper.settings.minLevelDiff or 0)
     local perRow, size, pad = GRID_STRIDE, 35, 5
     local rows = math.ceil(#items / perRow)
     self.content:SetSize((size + pad) * perRow, (size + pad) * rows)
@@ -283,20 +222,17 @@ function AutoScrapperFrame:Refresh()
         btn:SetScript("OnEnter", OnEnter)
         btn:SetScript("OnLeave", OnLeave)
 
-        -- Add a slot background (like bag slots)
         btn._Background = btn:CreateTexture(nil, "BACKGROUND")
         btn._Background:SetAllPoints()
-        btn._Background:SetAtlas("bags-item-slot") -- Blizzard’s standard slot background
+        btn._Background:SetAtlas("bags-item-slot")
         btn._Background:SetAlpha(0.8)
 
-        -- Normalize icon region
         btn._Icon = btn.Icon or btn.icon
         if not btn._Icon then
             btn._Icon = btn:CreateTexture(nil, "ARTWORK")
             btn._Icon:SetAllPoints()
         end
 
-        -- Clear default slot/flash textures defensively
         local normal    = btn:GetNormalTexture()
         local pushed    = btn:GetPushedTexture()
         local highlight = btn:GetHighlightTexture()
@@ -307,27 +243,11 @@ function AutoScrapperFrame:Refresh()
             highlight:SetAlpha(0)
         end
 
-        -- Kill any future highlight reinstatement by the template
-        btn:HookScript("OnShow", function(b)
-            local h = b:GetHighlightTexture()
-            if h then
-                h:SetTexture(nil)
-                h:SetAlpha(0)
-            end
-        end)
-        btn:HookScript("OnEnable", function(b)
-            local h = b:GetHighlightTexture()
-            if h then
-                h:SetTexture(nil)
-                h:SetAlpha(0)
-            end
-        end)
-        btn:HookScript("OnSizeChanged", function(b)
-            local h = b:GetHighlightTexture()
-            if h then h:SetAlpha(0) end
-        end)
+        btn:HookScript("OnShow",       function(b) local h=b:GetHighlightTexture(); if h then h:SetAlpha(0) end end)
+        btn:HookScript("OnEnable",     function(b) local h=b:GetHighlightTexture(); if h then h:SetAlpha(0) end end)
+        btn:HookScript("OnSizeChanged",function(b) local h=b:GetHighlightTexture(); if h then h:SetAlpha(0) end end)
 
-        btn:Hide() -- Prevent first-frame flash
+        btn:Hide()
         self.buttons[i] = btn
     end
 
@@ -341,25 +261,22 @@ function AutoScrapperFrame:Refresh()
         btn:ClearAllPoints()
         btn:SetPoint("TOPLEFT", col * (size + pad), -(row * (size + pad)))
 
-        -- Always show the slot background
-        if btn._Background then
-            btn._Background:Show()
-        end
+        if btn._Background then btn._Background:Show() end
 
-        -- Icon texture
         if btn._Icon then
             if item.icon then
                 btn._Icon:SetTexture(item.icon)
                 btn._Icon:SetTexCoord(0, 1, 0, 1)
                 btn._Icon:SetDesaturated(false)
+                kprint("Refresh: set icon for", item.link or "?", "icon", item.icon)
             else
-                btn._Icon:SetTexture(nil) -- leave background visible when empty
+                btn._Icon:SetTexture(nil)
+                kprint("Refresh: cleared icon for", item.link or "?", "(no icon)")
             end
         end
 
         btn.bag, btn.slot, btn.link = item.bag, item.slot, item.link
 
-        -- Border coloring
         local color = ITEM_QUALITY_COLORS[item.quality]
         if btn.IconBorder and color then
             btn.IconBorder:SetVertexColor(color.r, color.g, color.b)
@@ -375,34 +292,78 @@ function AutoScrapperFrame:Refresh()
     for i = #items + 1, #self.buttons do
         local btn = self.buttons[i]
         btn:Hide()
-        if btn._Background then
-            btn._Background:Show() -- keep slot background visible even when no item
-        end
+        if btn._Background then btn._Background:Show() end
+        if btn._Icon then btn._Icon:SetTexture(nil) end
+    end
+
+    kprint("Refresh complete:", #items, "items shown,", #self.buttons - #items, "buttons hidden")
+end
+
+function AutoScrapperFrame:ReevaluateScrapper()
+    if InCombatLockdown() then return end
+    if self._reevaluating then return end
+    self._reevaluating = true
+
+    -- Always redraw the grid first
+    self:Refresh()
+
+    if ScrappingMachineFrame and ScrappingMachineFrame:IsShown() and GetAutoFill() then
+        -- Clear current pending items
+        C_ScrappingMachineUI.RemoveAllScrapItems()
+
+        -- Delay one frame so the UI state settles before re‑adding
+        C_Timer.After(0, function()
+            local items = AutoScrapper:GetScrappableItems(
+                GetMaxQuality(),
+                AutoScrapper.settings.minLevelDiff or 0
+            )
+            if #items == 0 then
+                kprint("ReevaluateScrapper: no eligible items found")
+            else
+                local filled = 0
+                for _, item in ipairs(items) do
+                    if AutoScrapper:ScrapItemFromBag(item.bag, item.slot) then
+                        filled = filled + 1
+                    end
+                end
+                kprint("ReevaluateScrapper: placed", filled, "items after refresh")
+            end
+            self._reevaluating = false
+        end)
+    else
+        self._reevaluating = false
     end
 end
 
 
 --------------------------------------------------------------------------------
--- Eventing
+-- Eventing: auto-fill when empty
 --------------------------------------------------------------------------------
+
+local function IsScrapperEmpty()
+    for i = 0, SCRAPPING_MACHINE_SLOTS - 1 do
+        if C_ScrappingMachineUI.GetCurrentPendingScrapItemLocationByIndex(i) then
+            return false
+        end
+    end
+    return true
+end
 
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("SCRAPPING_MACHINE_PENDING_ITEM_CHANGED")
+f:RegisterEvent("SCRAPPING_MACHINE_SCRAPPING_FINISHED")
 
 f:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "Blizzard_ScrappingMachineUI" then
         AutoScrapperFrame:Initialize()
-        return
-    end
-
-    if event == "SCRAPPING_MACHINE_PENDING_ITEM_CHANGED" then
-        if GetAutoScrapAll() and ScrappingMachineFrame:IsShown() then
-            C_Timer.After(0, function()
-                if InCombatLockdown() then return end
-                -- just refill slots, do NOT click ScrapButton here
-                ScrappingUtils:AutoScrap()
-            end)
+    elseif event == "SCRAPPING_MACHINE_PENDING_ITEM_CHANGED" then
+        if GetAutoFill() and IsScrapperEmpty() then
+            C_Timer.After(0.05, function() AutoScrapper:FillNextBatch() end)
+        end
+    elseif event == "SCRAPPING_MACHINE_SCRAPPING_FINISHED" then
+        if GetAutoFill() then
+            C_Timer.After(0.1, function() AutoScrapper:FillNextBatch() end)
         end
     end
 end)

@@ -21,7 +21,6 @@ MinimapIcon:SetClickCallback(function(...) MinimapTooltipProvider:OnIconClick(..
 MinimapTooltip:SetProvider(MinimapTooltipProvider)
 
 
-
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
@@ -95,8 +94,19 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
     tooltip:AddHeader(colorize(KRemixHelper.Settings.AddonNameWithIcon, colors.Header))
     tooltip:SetFont(fonts.MainText)
 
+    -- Infinite Power section
+    AddSectionHeading("Your Infinite Power")
+    local aura = Threads.ScanAura("player")
+    if aura then
+        local lines = Stats:GetStatLines(aura)
+        for _, line in ipairs(lines) do
+            currentLine = tooltip:AddLine()
+            tooltip:SetCell(currentLine, 1, colorize(line, colors.White), "LEFT", 2)
+        end
+    end
+
     -- Threads section
-    AddSectionHeading("Threads")
+    AddSectionHeading("Your 'Threads'")
     local total, today = Threads:GetPlayerData()
     local currentLine = tooltip:AddLine()
     tooltip:SetCell(currentLine, 1, "Total Threads")
@@ -106,21 +116,10 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
     tooltip:SetCell(currentLine, 2, colorize("+" .. FormatWithCommasToThousands(today) .. " ", colors.White))
 
     -- Currency section
-    AddSectionHeading("Currency")
+    AddSectionHeading("Legion Remix Currency")
     AddCurrencyLine(tooltip, 3292)
     AddCurrencyLine(tooltip, 3268)
     AddCurrencyLine(tooltip, 3252)
-
-    -- Infinite Power section
-    AddSectionHeading("Infinite Power")
-    local aura = Threads.ScanAura("player")
-    if aura then
-        local lines = Stats:GetStatLines(aura)
-        for _, line in ipairs(lines) do
-            currentLine = tooltip:AddLine()
-            tooltip:SetCell(currentLine, 1, colorize(line, colors.White), "LEFT", 2)
-        end
-    end
 
     ---Add a section of clickable spell links.
     ---@param headerText string
@@ -147,9 +146,9 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
         end
     end
 
-    -- Artifact powers sections
-    addLinkLine("Disallowed Traits:", colors.Red, powers.disallow)
-    addLinkLine("Required Traits:", colors.Green, powers.required)
+    -- TODO: Artifact powers sections
+    --addLinkLine("Disallowed Traits:", colors.Red, powers.disallow)
+    --addLinkLine("Required Traits:", colors.Green, powers.required)
     -- addLinkLine("Allowed Traits:", colors.White, powers.allow)
 
     -- Footer
@@ -160,7 +159,6 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
     tooltip:SetFont(fonts.FooterText)
     tooltip:AddLine(colorize("Right click icon for options", colors.FooterDark))
 end
-
 
 
 --------------------------------------------------------------------------------

@@ -4,7 +4,7 @@
     - Core addon initialization using Ace3
     - Registers options, defaults, and minimap toggle
     - Wires into KDebug if available
-============================================================================]] --
+============================================================================]]--
 
 local _, Addon                 = ...
 
@@ -22,7 +22,6 @@ local addonOptionsSlashCommand = Addon.Settings.AddonOptionsSlashCommand
 ---@class LibAceAddon : AceAddon
 local LibAceAddon              = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceConsole-3.0", "AceEvent-3.0")
 Addon.LibAceAddon              = LibAceAddon
-
 
 --------------------------------------------------------------------------------
 -- AceOptions Initialization
@@ -73,23 +72,23 @@ Addon.AceOptions = {
                 },
                 spacer = {
                     type  = "description",
-                    name  = " ",
+                    name  = "  ",
                     order = 2,
                 },
-                autoFill = {
+                autoFillScrapper = {
                     type  = "toggle",
-                    name  = "Auto Fill on Open",
-                    desc  = "Automatically fill the scrapper with eligible items when opened.",
-                    get   = function() return LibAceAddon.db.profile.autoFill end,
-                    set   = function(_, val) LibAceAddon.db.profile.autoFill = val end,
+                    name  = "Auto Fill Scrapper",
+                    desc  = "Continuously tops up the scrapper when it's empty.",
+                    get   = function() return LibAceAddon.db.profile.autoFillScrapper end,
+                    set   = function(_, val) LibAceAddon.db.profile.autoFillScrapper = val end,
                     order = 3,
                 },
-                autoScrapAll = {
+                protectHigherIlvl = {
                     type  = "toggle",
-                    name  = "Auto Scrap All",
-                    desc  = "Continuously top up the scrapper until all items are scrapped.",
-                    get   = function() return LibAceAddon.db.profile.autoScrapAll end,
-                    set   = function(_, val) LibAceAddon.db.profile.autoScrapAll = val end,
+                    name  = "Keep High iLvl Items",
+                    desc  = "If enabled, items above your equipped item level for the item's slot will not be scrapped.",
+                    get   = function() return LibAceAddon.db.profile.protectHigherIlvl end,
+                    set   = function(_, val) LibAceAddon.db.profile.protectHigherIlvl = val end,
                     order = 4,
                 },
             },
@@ -99,12 +98,12 @@ Addon.AceOptions = {
 
 Addon.AceOptionsDefaults = {
     profile = {
-        showDebugOutput = false,
+        showDebugOutput   = false,
 
         -- Scrapping defaults
-        autoFill        = true,
-        autoScrapAll    = false,
-        maxQuality      = Enum.ItemQuality.Rare,
+        autoFillScrapper  = true,
+        protectHigherIlvl = true,
+        maxQuality        = Enum.ItemQuality.Rare,
     },
     global = {
         minimap = {
@@ -116,17 +115,14 @@ Addon.AceOptionsDefaults = {
     },
 }
 
-
 --------------------------------------------------------------------------------
 -- Database Accessors
 --------------------------------------------------------------------------------
 
----Return the AceDB database object.
 function LibAceAddon:GetDB()
     return self.db
 end
 
----Return the stored data version or a fallback.
 function LibAceAddon:GetDBDataVersion()
     if self.db.profile.dataVersion == nil then
         return "0.0.0"
@@ -138,12 +134,10 @@ end
 -- Minimap Button Toggles
 --------------------------------------------------------------------------------
 
----Check if the minimap button should be hidden.
 function LibAceAddon:ShouldHideMinimapButton(_)
     return self.db.global.minimap.hide
 end
 
----Toggle the minimap button visibility.
 function LibAceAddon:ToggleMinimapButton(_, value)
     self.db.global.minimap.hide = value
     local libIconModule = LibAceAddon:GetModule("MinimapIcon")
@@ -154,7 +148,6 @@ function LibAceAddon:ToggleMinimapButton(_, value)
     end
 end
 
----Check if debug output should be shown (handled by KDebug).
 function LibAceAddon:ShouldShowDebugOutput(_)
     return self.db.profile.showDebugOutput
 end
@@ -163,28 +156,22 @@ end
 -- Addon Lifecycle
 --------------------------------------------------------------------------------
 
----Called when the addon is enabled.
 function LibAceAddon:OnEnable()
     if Addon.Initialize then
         Addon:Initialize()
     end
 end
 
----Called when the addon is initialized.
 function LibAceAddon:OnInitialize()
-    -- Initialize AceDB
     self.db = LibStub("AceDB-3.0"):New(addonDBName, Addon.AceOptionsDefaults, true)
 
-    -- Register options with AceConfig
     LibStub("AceConfig-3.0"):RegisterOptionsTable(addonName, Addon.AceOptions, addonOptionsSlashCommand)
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addonName, addonNameWithSpaces)
 
-    -- Register with KDebug if available
     if KDebug_Register then
         KDebug_Register(self.db.profile, "FFF2BF4D")
         kprint(addonNameWithSpaces .. " registered with K Debug!")
     end
 
-    -- Store nominal version in profile
     self.db.profile.dataVersion = Addon.Settings.NominalVersion
 end

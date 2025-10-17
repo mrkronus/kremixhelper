@@ -33,17 +33,6 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
 
     tooltip:AddLine(" ")
 
-    -- Threads info line
-    tooltip:AddLine(colorize(FormatWithCommasToThousands(total) .. " Threads", colors.White))
-
-    -- Player-specific "today" line
-    if UnitIsUnit(unit, "player") then
-        local _, today = Threads:GetPlayerData()
-        tooltip:AddLine(colorize("+ " .. FormatWithCommasToThousands(today) .. " Today", colors.White))
-    end
-
-    tooltip:AddLine(" ")
-
     -- Stat breakdown lines
     local aura = Threads.ScanAura(unit)
     if aura then
@@ -51,6 +40,17 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
         for _, line in ipairs(lines) do
             tooltip:AddLine(colorize(line, colors.White))
         end
+    end
+
+    tooltip:AddLine(" ")
+
+    -- Threads info line
+    tooltip:AddLine(colorize(FormatWithCommasToThousands(total) .. " Threads", colors.WowToken))
+
+    -- Player-specific "today" line
+    if UnitIsUnit(unit, "player") then
+        local _, today = Threads:GetPlayerData()
+        tooltip:AddLine(colorize("+ " .. FormatWithCommasToThousands(today) .. " Today", colors.White))
     end
 
     tooltip:AddLine(" ")
