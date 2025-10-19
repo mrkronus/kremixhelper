@@ -9,6 +9,20 @@
 local _, Addon = ...
 
 
+--------------------------------------------------------------------------------
+-- Time Running
+--------------------------------------------------------------------------------
+
+local TIMERUNNING_MOP = 1
+local TIMERUNNING_LEGION = 2
+
+function IsInTimerunnerMode()
+	return PlayerGetTimerunningSeasonID and PlayerGetTimerunningSeasonID() ~= 0
+end
+
+function IsInLegionTimerunnerMode()
+	return PlayerGetTimerunningSeasonID and PlayerGetTimerunningSeasonID() == TIMERUNNING_LEGION
+end
 
 --------------------------------------------------------------------------------
 -- Comma Formatting

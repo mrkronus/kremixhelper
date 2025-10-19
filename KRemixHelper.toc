@@ -42,6 +42,5 @@ modules\gearguard\GearGuard.lua
 modules\gearguard\BagOverlay.lua
 
 # Auto Scrapping
-#modules\ScrappingUtils.lua
 modules\AutoScrapper.lua
 ui\AutoScrapperFrame.lua

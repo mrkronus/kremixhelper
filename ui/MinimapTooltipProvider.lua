@@ -7,6 +7,9 @@
 
 local _, KRemixHelper = ...
 
+local Fonts   = KRemixHelper.Fonts
+local Colors  = KRemixHelper.Colors
+
 ---@class ParentAceAddon : AceAddon
 local ParentAceAddon = LibStub("AceAddon-3.0"):GetAddon(KRemixHelper.Settings.AddonName)
 local MinimapTooltip = ParentAceAddon:GetModule("MinimapTooltip")
@@ -33,6 +36,17 @@ local function SpellLink(id, name)
     return ("|cff71d5ff|Hspell:%d|h[%s]|h|r"):format(id, name)
 end
 
+---Add a section heading with separators and font changes.
+---@param sectionName string
+local function AddSectionHeading(tooltip, sectionName)
+    tooltip:AddSeparator(10, 0, 0, 0, 0)
+    tooltip:SetFont(Fonts.Heading)
+    tooltip:AddLine(colorize(sectionName, Colors.SubHeader))
+    tooltip:AddSeparator()
+    tooltip:AddSeparator(3, 0, 0, 0, 0)
+    tooltip:SetFont(Fonts.MainText)
+end
+
 ---Add a currency line to the tooltip if the player has any of it.
 ---@param tooltip table
 ---@param currencyID number
@@ -46,7 +60,93 @@ local function AddCurrencyLine(tooltip, currencyID)
     end
 end
 
+---Add a section of clickable spell links.
+---@param headerText string
+---@param headerColor table
+---@param entries table
+local function addLinkLine(tooltip, headerText, headerColor, entries)
+    if #entries == 0 then return end
+    AddSectionHeading(colorize(headerText, headerColor))
+    for _, entry in ipairs(entries) do
+        local currentLine = tooltip:AddLine()
+        local linkText = SpellLink(entry.id, entry.name)
+        tooltip:SetCell(currentLine, 1, linkText, "LEFT", 1)
+        tooltip:SetLineScript(currentLine, "OnEnter", function()
+            GameTooltip:SetOwner(tooltip, "ANCHOR_RIGHT")
+            GameTooltip:SetSpellByID(entry.id)
+            GameTooltip:Show()
+        end)
+        tooltip:SetLineScript(currentLine, "OnLeave", function()
+            GameTooltip:Hide()
+        end)
+        tooltip:SetLineScript(currentLine, "OnMouseUp", function()
+            ChatFrame_OpenChat(C_Spell.GetSpellLink(entry.id))
+        end)
+    end
+end
 
+local function CloseWeaponTraitsUI()
+  local closed = false
+  local RAF = _G.RemixArtifactFrame
+  if RAF and RAF:IsShown() then
+    RAF:Hide()
+    closed = true
+  end
+  local AF = _G.ArtifactFrame
+  if AF and AF:IsShown() then
+    AF:Hide()
+    closed = true
+  end
+  if _G.ItemSocketingFrame and _G.ItemSocketingFrame:IsShown() then
+    if CloseSocketInfo then pcall(CloseSocketInfo) end
+    if _G.ItemSocketingFrame:IsShown() then
+      _G.ItemSocketingFrame:Hide()
+    end
+    closed = true
+  end
+  return closed
+end
+
+
+local function ToggleArtifactTree()
+  if InCombatLockdown and InCombatLockdown() then
+    UIErrorsFrame:AddMessage(L.ERR_COMBAT, 1, 0.1, 0.1)
+    return
+  end
+  if CloseWeaponTraitsUI() then return end
+  pcall(SocketInventoryItem, 16)
+  C_Timer.After(0.05, function()
+    pcall(SocketInventoryItem, 17)
+  end)
+end
+
+-- Constants
+local LIMITS_UNBOUND_SPELL_ID = 1245947
+local INFINITE_POWER_CURRENCY_ID = 3268
+local COST_TO_UNLOCK_TREE = 114125
+local COST_PER_RANK = 50000
+
+-- Function to get current Infinite Power
+local function GetInfinitePowerQty()
+  if not C_CurrencyInfo or not C_CurrencyInfo.GetCurrencyInfo then return 0 end
+  local ci = C_CurrencyInfo.GetCurrencyInfo(INFINITE_POWER_CURRENCY_ID)
+  return (ci and ci.quantity) or 0
+end
+
+-- Function to get spell icon
+local function GetSpellIcon(spellID)
+  if not spellID or not C_Spell.GetSpellTexture then return 134400 end
+  return C_Spell.GetSpellTexture(spellID) or 134400
+end
+
+-- Function to calculate Limits Unbound rank and format string
+local function GetLimitsUnboundRankString()
+  local ipQty = GetInfinitePowerQty()
+  local available = math.max(0, ipQty - COST_TO_UNLOCK_TREE)
+  local rank = math.floor(available / COST_PER_RANK)
+  local icon = ("|T%d:0|t"):format(GetSpellIcon(LIMITS_UNBOUND_SPELL_ID)) or ""
+  return colorize(tostring(rank), Colors.White) .. " " .. icon
+end
 
 --------------------------------------------------------------------------------
 -- Event Handlers
@@ -57,12 +157,11 @@ end
 ---@param button string
 function MinimapTooltipProvider:OnIconClick(clickedFrame, button)
     if button == "LeftButton" then
-        -- TODO: define left-click behavior
+        ToggleArtifactTree()
     elseif button == "RightButton" then
         Settings.OpenToCategory(KRemixHelper.Settings.AddonNameWithSpaces)
     end
 end
-
 
 
 --------------------------------------------------------------------------------
@@ -72,92 +171,64 @@ end
 ---Populate the minimap tooltip with Threads, currency, stats, and artifact powers.
 ---@param tooltip table
 function MinimapTooltipProvider:PopulateTooltip(tooltip)
-    local fonts   = KRemixHelper.Fonts
-    local colors  = KRemixHelper.Colors
-    local powers  = KRemixHelper.ArtifactPowers
-    local Threads = KRemixHelper.ThreadsTracker
-    local Stats   = KRemixHelper.StatsTracker
-
-    ---Add a section heading with separators and font changes.
-    ---@param sectionName string
-    local function AddSectionHeading(sectionName)
-        tooltip:AddSeparator(10, 0, 0, 0, 0)
-        tooltip:SetFont(fonts.Heading)
-        tooltip:AddLine(colorize(sectionName, colors.SubHeader))
-        tooltip:AddSeparator()
-        tooltip:AddSeparator(3, 0, 0, 0, 0)
-        tooltip:SetFont(fonts.MainText)
-    end
-
     tooltip:Clear()
-    tooltip:SetFont(fonts.MainHeader)
-    tooltip:AddHeader(colorize(KRemixHelper.Settings.AddonNameWithIcon, colors.Header))
-    tooltip:SetFont(fonts.MainText)
+    tooltip:SetFont(Fonts.MainHeader)
+    tooltip:AddHeader(colorize(KRemixHelper.Settings.AddonNameWithIcon, Colors.Header))
+    tooltip:SetFont(Fonts.MainText)
 
-    -- Infinite Power section
-    AddSectionHeading("Your Infinite Power")
-    local aura = Threads.ScanAura("player")
-    if aura then
-        local lines = Stats:GetStatLines(aura)
-        for _, line in ipairs(lines) do
-            currentLine = tooltip:AddLine()
-            tooltip:SetCell(currentLine, 1, colorize(line, colors.White), "LEFT", 2)
+    if IsInLegionTimerunnerMode() then
+        local Threads = KRemixHelper.ThreadsTracker
+        local Stats   = KRemixHelper.StatsTracker
+
+        -- Infinite Power section
+        AddSectionHeading(tooltip, "Your Infinite Power")
+        local aura = Threads.ScanAura("player")
+        if aura then
+            local lines = Stats:GetStatLines(aura)
+            for _, line in ipairs(lines) do
+                local currentLine = tooltip:AddLine()
+                tooltip:SetCell(currentLine, 1, colorize(line, Colors.White), "LEFT", 2)
+            end
         end
+        AddSectionHeading(tooltip, "Limits Unbound")
+        local limitsUnboundString = GetLimitsUnboundRankString()
+        local currentLine = tooltip:AddLine()
+        tooltip:SetCell(currentLine, 1, "Limits Unbound Rank")
+        tooltip:SetCell(currentLine, 2, limitsUnboundString)
+
+        -- Threads section
+        AddSectionHeading(tooltip, "Your 'Threads'")
+        local total, today = Threads:GetPlayerData()
+        local currentLine = tooltip:AddLine()
+        tooltip:SetCell(currentLine, 1, "Total Threads")
+        tooltip:SetCell(currentLine, 2, colorize(FormatWithCommasToThousands(total) .. " ", Colors.White))
+        currentLine = tooltip:AddLine()
+        tooltip:SetCell(currentLine, 1, "Gained Today")
+        tooltip:SetCell(currentLine, 2, colorize("+" .. FormatWithCommasToThousands(today) .. " ", Colors.White))
+
+        -- Currency section
+        AddSectionHeading(tooltip, "Legion Remix Currency")
+        AddCurrencyLine(tooltip, 3292)
+        AddCurrencyLine(tooltip, 3268)
+        AddCurrencyLine(tooltip, 3252)
+
+        -- TODO: Artifact powers sections
+        --addLinkLine(tooltip, "Disallowed Traits:", colors.Red, powers.disallow)
+        --addLinkLine(tooltip, "Required Traits:", colors.Green, powers.required)
+        --addLinkLine(tooltip, "Allowed Traits:", colors.White, powers.allow)
+    else
+        local currentLine = tooltip:AddLine()
+        tooltip:SetCell(currentLine, 1, colorize("The current character is not a Legion Remix character", Colors.Grey), 2)
     end
-
-    -- Threads section
-    AddSectionHeading("Your 'Threads'")
-    local total, today = Threads:GetPlayerData()
-    local currentLine = tooltip:AddLine()
-    tooltip:SetCell(currentLine, 1, "Total Threads")
-    tooltip:SetCell(currentLine, 2, colorize(FormatWithCommasToThousands(total) .. " ", colors.White))
-    currentLine = tooltip:AddLine()
-    tooltip:SetCell(currentLine, 1, "Gained Today")
-    tooltip:SetCell(currentLine, 2, colorize("+" .. FormatWithCommasToThousands(today) .. " ", colors.White))
-
-    -- Currency section
-    AddSectionHeading("Legion Remix Currency")
-    AddCurrencyLine(tooltip, 3292)
-    AddCurrencyLine(tooltip, 3268)
-    AddCurrencyLine(tooltip, 3252)
-
-    ---Add a section of clickable spell links.
-    ---@param headerText string
-    ---@param headerColor table
-    ---@param entries table
-    local function addLinkLine(headerText, headerColor, entries)
-        if #entries == 0 then return end
-        AddSectionHeading(colorize(headerText, headerColor))
-        for _, entry in ipairs(entries) do
-            currentLine = tooltip:AddLine()
-            local linkText = SpellLink(entry.id, entry.name)
-            tooltip:SetCell(currentLine, 1, linkText, "LEFT", 1)
-            tooltip:SetLineScript(currentLine, "OnEnter", function()
-                GameTooltip:SetOwner(tooltip, "ANCHOR_RIGHT")
-                GameTooltip:SetSpellByID(entry.id)
-                GameTooltip:Show()
-            end)
-            tooltip:SetLineScript(currentLine, "OnLeave", function()
-                GameTooltip:Hide()
-            end)
-            tooltip:SetLineScript(currentLine, "OnMouseUp", function()
-                ChatFrame_OpenChat(C_Spell.GetSpellLink(entry.id))
-            end)
-        end
-    end
-
-    -- TODO: Artifact powers sections
-    --addLinkLine("Disallowed Traits:", colors.Red, powers.disallow)
-    --addLinkLine("Required Traits:", colors.Green, powers.required)
-    -- addLinkLine("Allowed Traits:", colors.White, powers.allow)
 
     -- Footer
     tooltip:AddSeparator(3, 0, 0, 0, 0)
     tooltip:AddSeparator()
     tooltip:AddSeparator(3, 0, 0, 0, 0)
 
-    tooltip:SetFont(fonts.FooterText)
-    tooltip:AddLine(colorize("Right click icon for options", colors.FooterDark))
+    tooltip:SetFont(Fonts.FooterText)
+    tooltip:AddLine(colorize("Click icon to open weapon artifact tree", Colors.FooterDark))
+    tooltip:AddLine(colorize("Right click icon for options", Colors.FooterDark))
 end
 
 
