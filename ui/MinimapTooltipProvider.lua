@@ -148,6 +148,35 @@ local function GetLimitsUnboundRankString()
   return colorize(tostring(rank), Colors.White) .. " " .. icon
 end
 
+local function GetPlayerIdentity()
+    local unit = "player"
+    local name, realm   = UnitName(unit)
+    local localizedClass, classToken = UnitClass(unit)
+    local raceLocalized, raceToken   = UnitRace(unit)
+    local level         = UnitLevel(unit)
+    local faction       = UnitFactionGroup(unit)
+    local guid          = UnitGUID(unit)
+    local avgIlvl, eq   = GetAverageItemLevel()
+    local specID        = GetSpecialization()
+    local specName      = ""
+    if specID and specID > 0 then
+        _, specName = GetSpecializationInfo(specID)
+    end
+
+    return {
+        name           = name,
+        realm          = realm or GetRealmName(),
+        guid           = guid,
+        classToken     = classToken,
+        classLocalized = localizedClass,
+        specLocalized  = specName,
+        raceToken      = raceToken,
+        raceLocalized  = raceLocalized,
+        level          = level,
+        ilvl           = math.floor((avgIlvl or 0) + 0.5),
+        faction        = faction,
+    }
+end
 --------------------------------------------------------------------------------
 -- Event Handlers
 --------------------------------------------------------------------------------
@@ -173,12 +202,38 @@ end
 function MinimapTooltipProvider:PopulateTooltip(tooltip)
     tooltip:Clear()
     tooltip:SetFont(Fonts.MainHeader)
-    tooltip:AddHeader(colorize(KRemixHelper.Settings.AddonNameWithIcon, Colors.Header))
-    tooltip:SetFont(Fonts.MainText)
 
     if IsInLegionTimerunnerMode() then
         local Threads = KRemixHelper.ThreadsTracker
         local Stats   = KRemixHelper.StatsTracker
+
+        local player  = GetPlayerIdentity()
+        local faction    = player.faction
+        local classToken    = player.classToken
+
+        local headerLine = tooltip:AddLine()
+        tooltip:SetCell(headerLine, 1, getClassIcon(classToken) .." " .. colorize(player.name .. " - " .. player.realm, classToColor(classToken)))
+        tooltip:SetCell(headerLine, 2, KRemixHelper.FactionIcons[faction])
+
+        tooltip:SetFont(Fonts.MainText)
+
+        local factionString = faction or ""
+        local classLoc      = ((player.specLocalized .. " ") or "" ) .. (player.classLocalized or "")
+        local raceString    = player.raceLocalized or ""
+        local classString   = classLoc or ""
+        local level         = player.level or 0
+        local ilvl          = player.ilvl or 0
+        local totalThreads, threadsGainedToday = Threads:GetPlayerData()
+
+        tooltip:AddLine(raceString .. " | " .. colorize(factionString, KRemixHelper.FactionColors[faction]) .. " | " .. colorize(classString, classToColor(classToken)))
+        tooltip:AddLine("Level: " .. level .. " | iLvl: " .. ilvl .. " | Threads: " .. FormatWithCommasToThousands(totalThreads))
+
+        -- Limits Unbound section
+        AddSectionHeading(tooltip, "Limits Unbound")
+        local limitsUnboundString = GetLimitsUnboundRankString()
+        local currentLine = tooltip:AddLine()
+        tooltip:SetCell(currentLine, 1, "Limits Unbound Rank")
+        tooltip:SetCell(currentLine, 2, limitsUnboundString)
 
         -- Infinite Power section
         AddSectionHeading(tooltip, "Your Infinite Power")
@@ -190,21 +245,15 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
                 tooltip:SetCell(currentLine, 1, colorize(line, Colors.White), "LEFT", 2)
             end
         end
-        AddSectionHeading(tooltip, "Limits Unbound")
-        local limitsUnboundString = GetLimitsUnboundRankString()
-        local currentLine = tooltip:AddLine()
-        tooltip:SetCell(currentLine, 1, "Limits Unbound Rank")
-        tooltip:SetCell(currentLine, 2, limitsUnboundString)
 
         -- Threads section
-        AddSectionHeading(tooltip, "Your 'Threads'")
-        local total, today = Threads:GetPlayerData()
+        AddSectionHeading(tooltip, "Your Threads")
         local currentLine = tooltip:AddLine()
         tooltip:SetCell(currentLine, 1, "Total Threads")
-        tooltip:SetCell(currentLine, 2, colorize(FormatWithCommasToThousands(total) .. " ", Colors.White))
+        tooltip:SetCell(currentLine, 2, colorize(FormatWithCommasToThousands(totalThreads) .. " ", Colors.White))
         currentLine = tooltip:AddLine()
-        tooltip:SetCell(currentLine, 1, "Gained Today")
-        tooltip:SetCell(currentLine, 2, colorize("+" .. FormatWithCommasToThousands(today) .. " ", Colors.White))
+        tooltip:SetCell(currentLine, 1, "Gained")
+        tooltip:SetCell(currentLine, 2, colorize("+ " .. FormatWithCommasToThousands(threadsGainedToday) .. " ", Colors.White))
 
         -- Currency section
         AddSectionHeading(tooltip, "Legion Remix Currency")
@@ -217,6 +266,9 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
         --addLinkLine(tooltip, "Required Traits:", colors.Green, powers.required)
         --addLinkLine(tooltip, "Allowed Traits:", colors.White, powers.allow)
     else
+        tooltip:AddHeader(colorize(KRemixHelper.Settings.AddonNameWithIcon, Colors.Header))
+        tooltip:SetFont(Fonts.MainText)
+
         local currentLine = tooltip:AddLine()
         tooltip:SetCell(currentLine, 1, colorize("The current character is not a Legion Remix character", Colors.Grey), 2)
     end

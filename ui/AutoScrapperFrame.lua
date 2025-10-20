@@ -173,7 +173,7 @@ function AutoScrapperFrame:Initialize()
 
     -- Scroll frame grid
     local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 15, -180)
+    scroll:SetPoint("TOPLEFT", 15, -140)
     scroll:SetPoint("BOTTOMRIGHT", -35, 40)
     self.scrollFrame = scroll
     self.content = CreateFrame("Frame", nil, self.scrollFrame)
@@ -193,6 +193,7 @@ function AutoScrapperFrame:Initialize()
     -- Hooks to Blizzard scrapper
     blizzardScrappingFrame:HookScript("OnShow", function()
         self.frame:Show()
+        self:ReevaluateScrapper()
         if GetAutoFill() then
             AutoScrapper:FillNextBatch()
         end
@@ -233,21 +234,16 @@ function AutoScrapperFrame:Refresh()
             btn._Icon:SetAllPoints()
         end
 
-        local normal    = btn:GetNormalTexture()
-        local pushed    = btn:GetPushedTexture()
-        local highlight = btn:GetHighlightTexture()
-        if normal then normal:SetTexture(nil) end
-        if pushed then pushed:SetTexture(nil) end
-        if highlight then
-            highlight:SetTexture(nil)
-            highlight:SetAlpha(0)
+        -- Disable Blizzard's "new item" glow
+        if btn.NewItemTexture then
+            btn.NewItemTexture:Hide()
+            btn.NewItemTexture.Show = function() end  -- prevent it from being shown again
+        end
+        if btn.BattlepayItemTexture then
+            btn.BattlepayItemTexture:Hide()
+            btn.BattlepayItemTexture.Show = function() end
         end
 
-        btn:HookScript("OnShow",       function(b) local h=b:GetHighlightTexture(); if h then h:SetAlpha(0) end end)
-        btn:HookScript("OnEnable",     function(b) local h=b:GetHighlightTexture(); if h then h:SetAlpha(0) end end)
-        btn:HookScript("OnSizeChanged",function(b) local h=b:GetHighlightTexture(); if h then h:SetAlpha(0) end end)
-
-        btn:Hide()
         self.buttons[i] = btn
     end
 
@@ -288,13 +284,13 @@ function AutoScrapperFrame:Refresh()
         btn:Show()
     end
 
-    -- Hide unused buttons
-    for i = #items + 1, #self.buttons do
-        local btn = self.buttons[i]
-        btn:Hide()
-        if btn._Background then btn._Background:Show() end
-        if btn._Icon then btn._Icon:SetTexture(nil) end
-    end
+    -- -- Hide unused buttons
+    -- for i = #items + 1, #self.buttons do
+    --     local btn = self.buttons[i]
+    --     btn:Hide()
+    --     if btn._Background then btn._Background:Show() end
+    --     if btn._Icon then btn._Icon:SetTexture(nil) end
+    -- end
 
     kprint("Refresh complete:", #items, "items shown,", #self.buttons - #items, "buttons hidden")
 end

@@ -15,6 +15,7 @@ Addon.ThreadsTracker = ThreadsTracker
 if not ThreadsDB then ThreadsDB = {} end
 
 -- Spell ID for Infinite Power aura
+-- https://www.wowhead.com/spell=1232454/infinite-power
 local THREADS_SPELL_ID = 1232454
 
 

@@ -25,6 +25,9 @@ Addon.Settings.Colors    = (KLib and KLib.Colors) or nil
 -- Defensive: register debug only if KDebug is present
 Addon.KDebug_Register = (Addon.Settings.HasKDebug and KDebug and KDebug.Register) or function() end
 
+-- If KLib isn't loaded, then look for the version in KLibLite
+Addon.Settings.Colors = Addon.Settings.Colors or Addon.Colors
+
 
 --------------------------------------------------------------------------------
 -- Metadata

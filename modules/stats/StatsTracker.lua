@@ -12,12 +12,13 @@ local StatsTracker = {}
 Addon.StatsTracker = StatsTracker
 
 
-
 --------------------------------------------------------------------------------
 -- Stat Mapping
 --------------------------------------------------------------------------------
 
 -- Canonical mapping of aura.points indices
+-- NOTE: this is unused and is just here as documentation of:
+-- https://www.wowhead.com/spell=1232454/infinite-power
 StatsTracker.STAT_MAP = {
     [1]  = "Primary Stats",   -- Str/Agi/Int
     [2]  = "Stamina",
@@ -25,49 +26,55 @@ StatsTracker.STAT_MAP = {
     [4]  = "Critical Strike",
     [5]  = "Versatility",
     [6]  = "Mastery",
-    [7]  = "Speed Rating",
+    [7]  = "Speed",
     [8]  = "Leech",
     [9]  = "Avoidance",
     [10] = "Experience Gain", -- from kills
-    [11] = "Experience Gain", -- from quests
-    [12] = "Stamina (flat)",
-    [13] = "Unknown Stat",
+    [11] = "Experience Gain", -- from quests (though should be the same as the other)
+    [12] = "Stamina",
+    [13] = "Unknown Stat",    -- usually the flat primary stat increase
     [14] = "Armor %",
     [15] = "Mastery Rating",
-    [16] = "Stamina (flat)",
+    [16] = "Stamina",         -- for some reason it's split into two stats
 }
 
 
-
 --------------------------------------------------------------------------------
--- Display Toggles
+-- Display Spec (order + grouping)
 --------------------------------------------------------------------------------
 
--- Toggle table: determines which stats are shown
-StatsTracker.showStats = {
-    [1]  = true,
-    [2]  = true,
-    [3]  = true,
-    [4]  = true,
-    [5]  = true,
-    [6]  = true,
-    [7]  = true,
-    [8]  = true,
-    [9]  = true,
-    [10] = true,
-    [11] = false,
-    [12] = false,
-    [13] = false,
-    [14] = true,
-    [15] = true,
-    [16] = false,
+StatsTracker.STAT_DISPLAY = {
+    { label = "Primary",         type = "percent", indices = { 1 } },
+    { label = "Primary",         type = "flat",    indices = { 13 } },
+    { label = "Stamina",         type = "percent", indices = { 2 } },
+    { label = "Stamina",         type = "flat",    indices = { 12, 16 } },
+    { label = "Attack Speed",    type = "percent", indices = { 3 } },
+    { label = "Critical Strike", type = "percent", indices = { 4 } },
+    { label = "Versatility",     type = "percent", indices = { 5 } },
+    { label = "Mastery",         type = "percent", indices = { 6 } },
+    { label = "Mastery Rating",  type = "flat",    indices = { 15 } },
+    { label = "Speed",           type = "flat",    indices = { 7 } },
+    { label = "Leech",           type = "percent", indices = { 8 } },
+    { label = "Avoidance",       type = "flat",    indices = { 9 } },
+    { label = "Armor",           type = "percent", indices = { 14 } },
+    { label = "Experience Gain", type = "percent", indices = { 10 } },
+    -- 11 is ignored since it's a duplicate of 10
 }
-
 
 
 --------------------------------------------------------------------------------
 -- Public: Stat Line Builder
 --------------------------------------------------------------------------------
+
+local function GetPrimaryStatName()
+    if UnitStat("player", 1) > UnitStat("player", 2) and UnitStat("player", 1) > UnitStat("player", 4) then
+        return "Strength"
+    elseif UnitStat("player", 2) > UnitStat("player", 1) and UnitStat("player", 2) > UnitStat("player", 4) then
+        return "Agility"
+    else
+        return "Intellect"
+    end
+end
 
 ---Build normalized stat lines from an aura.
 ---@param aura table Aura data
@@ -78,38 +85,28 @@ function StatsTracker:GetStatLines(aura)
         return lines
     end
 
-    for i = 1, 16 do
-        if self.showStats[i] and aura.points[i] then
-            local raw   = aura.points[i]
-            local label = self.STAT_MAP[i] or ("Stat" .. i)
+    local function addLine(value, suffix, isPercent)
+        local prefix = "+" .. FormatWithCommas(value)
+        if isPercent then
+            table.insert(lines, prefix .. "% " .. suffix)
+        else
+            table.insert(lines, prefix .. " " .. suffix)
+        end
+    end
 
-            if i == 1 then
-                -- Primary stat % (Str/Agi/Int)
-                local statName
-                if UnitStat("player", 1) > UnitStat("player", 2) and UnitStat("player", 1) > UnitStat("player", 4) then
-                    statName = "Strength"
-                elseif UnitStat("player", 2) > UnitStat("player", 1) and UnitStat("player", 2) > UnitStat("player", 4) then
-                    statName = "Agility"
-                else
-                    statName = "Intellect"
-                end
+    for _, entry in ipairs(self.STAT_DISPLAY) do
+        local total = 0
+        for _, idx in ipairs(entry.indices) do
+            if aura.points[idx] then
+                total = total + aura.points[idx]
+            end
+        end
 
-                if raw > 0 then
-                    table.insert(lines, "+" .. FormatWithCommas(raw) .. "% " .. statName)
-                end
-
-            elseif i == 2 or i == 3 or i == 4 or i == 5 or i == 6
-                or i == 8 or i == 10 or i == 11 or i == 14 then
-                -- Stats expressed as percentages
-                if raw > 0 then
-                    table.insert(lines, "+" .. FormatWithCommas(raw) .. "% " .. label)
-                end
-
+        if total > 0 then
+            if entry.label == "Primary" then
+                addLine(total, GetPrimaryStatName(), entry.type == "percent")
             else
-                -- Flat stats
-                if raw > 0 then
-                    table.insert(lines, "+" .. FormatWithCommas(raw) .. " " .. label)
-                end
+                addLine(total, entry.label, entry.type == "percent")
             end
         end
     end
