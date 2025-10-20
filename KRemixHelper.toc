@@ -27,7 +27,6 @@ ace\MinimapIcon.lua
 ui\MinimapTooltipProvider.lua
 
 # Data
-data\ArtifactPowers.lua
 data\FormattingHelpers.lua
 
 # Stats
@@ -36,10 +35,6 @@ modules\stats\StatsTracker.lua
 
 # Unit Tooltips
 ui\UnitTooltip.lua
-
-# Gear Guard
-modules\gearguard\GearGuard.lua
-modules\gearguard\BagOverlay.lua
 
 # Auto Scrapping
 modules\AutoScrapper.lua
