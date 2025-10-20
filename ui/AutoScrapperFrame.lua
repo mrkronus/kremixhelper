@@ -14,31 +14,31 @@
     - Uses AceDB profile values if available
 -----------------------------------------------------------------------------]]
 
-local _, Addon = ...
+local _, Addon                = ...
 
-local kprint = Addon.Settings.kprint
-local AutoScrapper = Addon.AutoScrapper
+local kprint                  = Addon.Settings.kprint
+local AutoScrapper            = Addon.AutoScrapper
 
 --------------------------------------------------------------------------------
 -- Constants
 --------------------------------------------------------------------------------
 
-local SCRAPPER_FRAME_WIDTH      = 325
-local GRID_STRIDE               = 7
-local SCRAPPING_MACHINE_SLOTS   = 9
+local SCRAPPER_FRAME_WIDTH    = 325
+local GRID_STRIDE             = 7
+local SCRAPPING_MACHINE_SLOTS = 9
 
 --------------------------------------------------------------------------------
 -- AutoScrapperFrame
 --------------------------------------------------------------------------------
 
 ---@class AutoScrapperFrame
-local AutoScrapperFrame = {
+local AutoScrapperFrame       = {
     frame       = nil,
     scrollFrame = nil,
     content     = nil,
     buttons     = {},
 }
-Addon.AutoScrapperFrame = AutoScrapperFrame
+Addon.AutoScrapperFrame       = AutoScrapperFrame
 
 --------------------------------------------------------------------------------
 -- Helpers (settings & persistence)
@@ -98,9 +98,11 @@ local function OnClick(btn)
 end
 
 local function OnEnter(btn)
-    GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-    GameTooltip:SetHyperlink(btn.link)
-    GameTooltip:Show()
+    if btn.link then
+        GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink(btn.link)
+        GameTooltip:Show()
+    end
 end
 
 local function OnLeave()
@@ -171,11 +173,18 @@ function AutoScrapperFrame:Initialize()
         self:ReevaluateScrapper()
     end)
 
-    -- Scroll frame grid
-    local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 15, -140)
-    scroll:SetPoint("BOTTOMRIGHT", -35, 40)
+    -- Scroll frame grid container
+    local gridContainer = CreateFrame("Frame", nil, frame, "InsetFrameTemplate3")
+    gridContainer:SetPoint("TOPLEFT", 10, -140)
+    gridContainer:SetPoint("BOTTOMRIGHT", -10, 40)
+
+    -- Scroll frame inside the container
+    local scroll = CreateFrame("ScrollFrame", nil, gridContainer, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 5, -5)
+    scroll:SetPoint("BOTTOMRIGHT", -28, 5)
     self.scrollFrame = scroll
+
+    -- Content frame that holds the item buttons
     self.content = CreateFrame("Frame", nil, self.scrollFrame)
     self.scrollFrame:SetScrollChild(self.content)
 
@@ -212,22 +221,36 @@ function AutoScrapperFrame:Refresh()
     if InCombatLockdown() then return end
 
     local items = AutoScrapper:GetScrappableItems(GetMaxQuality(), AutoScrapper.settings.minLevelDiff or 0)
-    local perRow, size, pad = GRID_STRIDE, 35, 5
-    local rows = math.ceil(#items / perRow)
+    local perRow, size, pad = GRID_STRIDE, 36, 3
+
+    -- How many rows of items we actually need
+    local itemRows = math.ceil(#items / perRow)
+    local rows
+
+    if itemRows < 4 then
+        rows = 4
+    else
+        -- pad the last row to a full stride
+        rows = itemRows
+    end
+
+    local totalSlots = rows * perRow
     self.content:SetSize((size + pad) * perRow, (size + pad) * rows)
 
     -- Ensure enough buttons exist
-    for i = #self.buttons + 1, #items do
+    for i = #self.buttons + 1, totalSlots do
         local btn = CreateFrame("Button", nil, self.content, "ContainerFrameItemButtonTemplate")
         btn:SetScript("OnClick", OnClick)
         btn:SetScript("OnEnter", OnEnter)
         btn:SetScript("OnLeave", OnLeave)
 
+        -- Background slot texture
         btn._Background = btn:CreateTexture(nil, "BACKGROUND")
         btn._Background:SetAllPoints()
         btn._Background:SetAtlas("bags-item-slot")
         btn._Background:SetAlpha(0.8)
 
+        -- Icon
         btn._Icon = btn.Icon or btn.icon
         if not btn._Icon then
             btn._Icon = btn:CreateTexture(nil, "ARTWORK")
@@ -237,18 +260,31 @@ function AutoScrapperFrame:Refresh()
         -- Disable Blizzard's "new item" glow
         if btn.NewItemTexture then
             btn.NewItemTexture:Hide()
-            btn.NewItemTexture.Show = function() end  -- prevent it from being shown again
+            btn.NewItemTexture.Show = function() end
         end
         if btn.BattlepayItemTexture then
             btn.BattlepayItemTexture:Hide()
             btn.BattlepayItemTexture.Show = function() end
         end
 
+        -- Custom quality border
+        btn._QualityBorder = btn:CreateTexture(nil, "OVERLAY")
+        btn._QualityBorder:SetAllPoints()
+        btn._QualityBorder:SetAtlas("UI-Frame-IconBorder")
+        btn._QualityBorder:Hide()
+
+        -- Empty slot texture (shows when no item is present)
+        btn._EmptyIcon = btn:CreateTexture(nil, "ARTWORK")
+        btn._EmptyIcon:SetAllPoints()
+        btn._EmptyIcon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
+        btn._EmptyIcon:SetAlpha(0.4) -- faint look
+        btn._EmptyIcon:Hide()
+
         self.buttons[i] = btn
     end
 
-    -- Update buttons
-    for i, item in ipairs(items) do
+    -- Update all slots (items + empties)
+    for i = 1, totalSlots do
         local row = math.floor((i - 1) / perRow)
         local col = (i - 1) % perRow
         local btn = self.buttons[i]
@@ -257,42 +293,35 @@ function AutoScrapperFrame:Refresh()
         btn:ClearAllPoints()
         btn:SetPoint("TOPLEFT", col * (size + pad), -(row * (size + pad)))
 
-        if btn._Background then btn._Background:Show() end
+        local item = items[i]
+        if item then
+            -- Show item
+            btn._Icon:SetTexture(item.icon)
+            btn._Icon:SetTexCoord(0, 1, 0, 1)
+            btn._Icon:SetDesaturated(false)
+            btn.bag, btn.slot, btn.link = item.bag, item.slot, item.link
 
-        if btn._Icon then
-            if item.icon then
-                btn._Icon:SetTexture(item.icon)
-                btn._Icon:SetTexCoord(0, 1, 0, 1)
-                btn._Icon:SetDesaturated(false)
-                kprint("Refresh: set icon for", item.link or "?", "icon", item.icon)
+            local color = ITEM_QUALITY_COLORS[item.quality]
+            if color then
+                btn._QualityBorder:SetVertexColor(color.r, color.g, color.b)
+                btn._QualityBorder:Show()
             else
-                btn._Icon:SetTexture(nil)
-                kprint("Refresh: cleared icon for", item.link or "?", "(no icon)")
+                btn._QualityBorder:Hide()
             end
-        end
 
-        btn.bag, btn.slot, btn.link = item.bag, item.slot, item.link
-
-        local color = ITEM_QUALITY_COLORS[item.quality]
-        if btn.IconBorder and color then
-            btn.IconBorder:SetVertexColor(color.r, color.g, color.b)
-            btn.IconBorder:Show()
-        elseif btn.IconBorder then
-            btn.IconBorder:Hide()
+            if btn._EmptyIcon then btn._EmptyIcon:Hide() end
+        else
+            -- Empty slot
+            btn._Icon:SetTexture(nil)
+            btn.bag, btn.slot, btn.link = nil, nil, nil
+            btn._QualityBorder:Hide()
+            if btn._EmptyIcon then btn._EmptyIcon:Show() end
         end
 
         btn:Show()
     end
 
-    -- -- Hide unused buttons
-    -- for i = #items + 1, #self.buttons do
-    --     local btn = self.buttons[i]
-    --     btn:Hide()
-    --     if btn._Background then btn._Background:Show() end
-    --     if btn._Icon then btn._Icon:SetTexture(nil) end
-    -- end
-
-    kprint("Refresh complete:", #items, "items shown,", #self.buttons - #items, "buttons hidden")
+    kprint("Refresh complete:", #items, "items,", totalSlots - #items, "empty slots,", totalSlots, "total")
 end
 
 function AutoScrapperFrame:ReevaluateScrapper()
@@ -331,7 +360,6 @@ function AutoScrapperFrame:ReevaluateScrapper()
     end
 end
 
-
 --------------------------------------------------------------------------------
 -- Eventing: auto-fill when empty
 --------------------------------------------------------------------------------
@@ -359,7 +387,10 @@ f:SetScript("OnEvent", function(_, event, arg1)
         end
     elseif event == "SCRAPPING_MACHINE_SCRAPPING_FINISHED" then
         if GetAutoFill() then
-            C_Timer.After(0.1, function() AutoScrapper:FillNextBatch() end)
+            C_Timer.After(0.1, function()
+                AutoScrapper:FillNextBatch()
+                AutoScrapperFrame:ReevaluateScrapper()
+            end)
         end
     end
 end)
