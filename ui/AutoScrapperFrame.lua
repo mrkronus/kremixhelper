@@ -380,23 +380,36 @@ local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("SCRAPPING_MACHINE_PENDING_ITEM_CHANGED")
 f:RegisterEvent("SCRAPPING_MACHINE_SCRAPPING_FINISHED")
+f:RegisterEvent("BAG_UPDATE_DELAYED")
 
 f:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "Blizzard_ScrappingMachineUI" then
         AutoScrapperFrame:Initialize()
+
     elseif event == "SCRAPPING_MACHINE_PENDING_ITEM_CHANGED" then
-        if GetAutoFill() and IsScrapperEmpty() then
-            C_Timer.After(0, function()
-                print("doom")
+        if GetAutoFill() then
+            if IsScrapperEmpty() then
+                C_Timer.After(0.4, function()
+                    AutoScrapper:FillNextBatch()
+                end)
+            else
+                -- just redraw the grid to reflect slot state
                 AutoScrapperFrame:Refresh()
-            end)
+            end
         end
+
     elseif event == "SCRAPPING_MACHINE_SCRAPPING_FINISHED" then
         if GetAutoFill() then
-            C_Timer.After(0.1, function()
+            -- don’t refresh here, just schedule a fill after bags update
+            C_Timer.After(0.5, function()
                 AutoScrapper:FillNextBatch()
-                AutoScrapperFrame:ReevaluateScrapper()
             end)
+        end
+
+    elseif event == "BAG_UPDATE_DELAYED" then
+        if ScrappingMachineFrame and ScrappingMachineFrame:IsShown() then
+            -- now the bag contents are correct, safe to redraw
+            AutoScrapperFrame:ReevaluateScrapper()
         end
     end
 end)
