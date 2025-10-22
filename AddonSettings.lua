@@ -18,12 +18,12 @@ local KDebug = _G.KDebug or nil
 --------------------------------------------------------------------------------
 
 Addon.Settings = {}
-Addon.Settings.HasKDebug = (KLib and KLib.HasKDebug and KDebug) or false
+Addon.Settings.HasKDebug = KDebug or false
 Addon.Settings.kprint    = (KLib and KLib.kprint) or function() end
 Addon.Settings.Colors    = (KLib and KLib.Colors) or nil
 
 -- Defensive: register debug only if KDebug is present
-Addon.KDebug_Register = (Addon.Settings.HasKDebug and KDebug and KDebug.Register) or function() end
+Addon.KDebug_Register = (Addon.Settings.HasKDebug and KDebug.Register) or function() end
 
 -- If KLib isn't loaded, then look for the version in KLibLite
 Addon.Settings.Colors = Addon.Settings.Colors or Addon.Colors

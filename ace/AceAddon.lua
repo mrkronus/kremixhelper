@@ -169,7 +169,7 @@ function LibAceAddon:OnInitialize()
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addonName, addonNameWithSpaces)
 
     if KDebug_Register then
-        KDebug_Register(self.db.profile, "FFF2BF4D")
+        KDebug_Register(self.db.profile, Colors.Artifact)
         kprint(addonNameWithSpaces .. " registered with K Debug!")
     end
 

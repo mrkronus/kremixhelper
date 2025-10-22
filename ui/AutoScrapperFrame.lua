@@ -8,7 +8,7 @@
       - Fill All button
       - Auto Fill on Open checkbox
       - Auto Scrap All checkbox
-      - Protect Higher iLvl Items checkbox
+      - Protect Higher ilvl Items checkbox
   Notes:
     - Calls AutoScrapper:FillNextBatch() only on open, Fill button, or empty
     - Uses AceDB profile values if available
@@ -23,9 +23,12 @@ local AutoScrapper            = Addon.AutoScrapper
 -- Constants
 --------------------------------------------------------------------------------
 
-local SCRAPPER_FRAME_WIDTH    = 325
+local SCRAPPER_FRAME_WIDTH    = 335
 local GRID_STRIDE             = 7
+local GRID_GAP                = 4
+local GRID_ICON_SIZE          = 36
 local SCRAPPING_MACHINE_SLOTS = 9
+local MIN_NUM_ROWS            = 3
 
 --------------------------------------------------------------------------------
 -- AutoScrapperFrame
@@ -133,7 +136,7 @@ function AutoScrapperFrame:Initialize()
 
     local owner = self
     local dropdown = CreateFrame("Frame", "AutoScrapperQualityDropdown", frame, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("TOPLEFT", qualityLabel, "BOTTOMLEFT", -20, -5)
+    dropdown:SetPoint("TOPLEFT", qualityLabel, "BOTTOMLEFT", -17, -5)
     UIDropDownMenu_SetWidth(dropdown, 120)
     UIDropDownMenu_Initialize(dropdown, function(_, level)
         for q = Enum.ItemQuality.Common, Enum.ItemQuality.Epic do
@@ -153,7 +156,7 @@ function AutoScrapperFrame:Initialize()
     UIDropDownMenu_SetSelectedValue(dropdown, GetMaxQuality())
 
     local autoScrapCheck = CreateFrame("CheckButton", nil, frame, "ChatConfigCheckButtonTemplate")
-    autoScrapCheck:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 15, 0)
+    autoScrapCheck:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 17, 0)
     autoScrapCheck.Text:SetText("Auto Fill When Empty")
     autoScrapCheck:SetChecked(GetAutoFill())
     autoScrapCheck:SetScript("OnClick", function(btn)
@@ -166,7 +169,7 @@ function AutoScrapperFrame:Initialize()
 
     local protectCheck = CreateFrame("CheckButton", nil, frame, "ChatConfigCheckButtonTemplate")
     protectCheck:SetPoint("TOPLEFT", autoScrapCheck, "BOTTOMLEFT", 0, 0)
-    protectCheck.Text:SetText("Keep Higher iLvl Items")
+    protectCheck.Text:SetText("Keep Higher ilvl Items")
     protectCheck:SetChecked(GetProtectHigherIlvl())
     protectCheck:SetScript("OnClick", function(btn)
         SetProtectHigherIlvl(btn:GetChecked())
@@ -175,13 +178,13 @@ function AutoScrapperFrame:Initialize()
 
     -- Scroll frame grid container
     local gridContainer = CreateFrame("Frame", nil, frame, "InsetFrameTemplate3")
-    gridContainer:SetPoint("TOPLEFT", 10, -140)
-    gridContainer:SetPoint("BOTTOMRIGHT", -10, 40)
+    gridContainer:SetPoint("TOPLEFT", 12, -130)
+    gridContainer:SetPoint("BOTTOMRIGHT", -12, 30)
 
     -- Scroll frame inside the container
     local scroll = CreateFrame("ScrollFrame", nil, gridContainer, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 5, -5)
-    scroll:SetPoint("BOTTOMRIGHT", -28, 5)
+    scroll:SetPoint("BOTTOMRIGHT", -28, 4)
     self.scrollFrame = scroll
 
     -- Content frame that holds the item buttons
@@ -191,7 +194,7 @@ function AutoScrapperFrame:Initialize()
     -- Fill All button
     local fillAllBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     fillAllBtn:SetSize(120, 22)
-    fillAllBtn:SetPoint("BOTTOM", frame, "BOTTOM", 0, 10)
+    fillAllBtn:SetPoint("BOTTOM", frame, "BOTTOM", 0, 5)
     fillAllBtn:SetText("Fill All")
     fillAllBtn:SetScript("OnClick", function()
         if InCombatLockdown() then return end
@@ -221,14 +224,14 @@ function AutoScrapperFrame:Refresh()
     if InCombatLockdown() then return end
 
     local items = AutoScrapper:GetScrappableItems(GetMaxQuality(), AutoScrapper.settings.minLevelDiff or 0)
-    local perRow, size, pad = GRID_STRIDE, 36, 3
+    local perRow, size, pad = GRID_STRIDE, GRID_ICON_SIZE, GRID_GAP
 
     -- How many rows of items we actually need
     local itemRows = math.ceil(#items / perRow)
     local rows
 
-    if itemRows < 4 then
-        rows = 4
+    if itemRows < MIN_NUM_ROWS then
+        rows = MIN_NUM_ROWS
     else
         -- pad the last row to a full stride
         rows = itemRows
