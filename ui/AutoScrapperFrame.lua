@@ -383,7 +383,11 @@ f:SetScript("OnEvent", function(_, event, arg1)
         AutoScrapperFrame:Initialize()
     elseif event == "SCRAPPING_MACHINE_PENDING_ITEM_CHANGED" then
         if GetAutoFill() and IsScrapperEmpty() then
-            C_Timer.After(0.05, function() AutoScrapper:FillNextBatch() end)
+            C_Timer.After(0.1, function()
+                AutoScrapper:FillNextBatch()
+                AutoScrapperFrame:Refresh()
+                print("doom")
+            end)
         end
     elseif event == "SCRAPPING_MACHINE_SCRAPPING_FINISHED" then
         if GetAutoFill() then
