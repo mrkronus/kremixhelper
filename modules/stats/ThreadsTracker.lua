@@ -1,7 +1,7 @@
 --[[============================================================================
   ThreadsTracker.lua
   Purpose:
-    - Track Threads totals from Infinite Power aura
+    - Track Threads totals from Infinite Power aura from Legion Remix
     - Track daily gain for the player
 ============================================================================]]--
 
@@ -63,6 +63,18 @@ function ThreadsTracker:GetUnitTotal(unit)
         end
     end
     return total
+end
+
+---Get total Threads for a unit (skips XP at index 11).
+---@param unit string Unit token
+---@return number|nil total Threads total or nil if aura not found
+function ThreadsTracker:GetUnitVersatilityBonus(unit)
+    local aura = ScanAura(unit)
+    if not aura then
+        return nil
+    end
+
+    return aura.points[5] or 0
 end
 
 

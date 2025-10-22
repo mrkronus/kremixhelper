@@ -65,21 +65,98 @@ StatsTracker.STAT_DISPLAY = {
 --------------------------------------------------------------------------------
 -- Public: Stat Line Builder
 --------------------------------------------------------------------------------
+-- From: https://warcraft.wiki.gg/wiki/SpecializationID
+local SPEC_PRIMARY_STAT = {
+  -- Warrior
+  [71] = "Strength", -- Arms
+  [72] = "Strength", -- Fury
+  [73] = "Strength", -- Protection
 
-local function GetPrimaryStatName()
-    if UnitStat("player", 1) > UnitStat("player", 2) and UnitStat("player", 1) > UnitStat("player", 4) then
-        return "Strength"
-    elseif UnitStat("player", 2) > UnitStat("player", 1) and UnitStat("player", 2) > UnitStat("player", 4) then
-        return "Agility"
-    else
-        return "Intellect"
+  -- Paladin
+  [65] = "Intellect", -- Holy
+  [66] = "Strength",  -- Protection
+  [70] = "Strength",  -- Retribution
+
+  -- Hunter
+  [253] = "Agility", -- Beast Mastery
+  [254] = "Agility", -- Marksmanship
+  [255] = "Agility", -- Survival
+
+  -- Rogue
+  [259] = "Agility", -- Assassination
+  [260] = "Agility", -- Outlaw
+  [261] = "Agility", -- Subtlety
+
+  -- Priest
+  [256] = "Intellect", -- Discipline
+  [257] = "Intellect", -- Holy
+  [258] = "Intellect", -- Shadow
+
+  -- DK
+  [250] = "Strength", -- Blood
+  [251] = "Strength", -- Frost
+  [252] = "Strength", -- Unholy
+
+  -- Shaman
+  [262] = "Intellect", -- Elemental
+  [263] = "Agility",   -- Enhancement
+  [264] = "Intellect", -- Restoration
+
+  -- Mage
+  [62]  = "Intellect", -- Arcane
+  [63]  = "Intellect", -- Fire
+  [64]  = "Intellect", -- Frost
+
+  -- Warlock
+  [265] = "Intellect", -- Affliction
+  [266] = "Intellect", -- Demonology
+  [267] = "Intellect", -- Destruction
+
+  -- Monk
+  [268] = "Agility",   -- Brewmaster
+  [269] = "Agility",   -- Windwalker
+  [270] = "Intellect", -- Mistweaver
+
+  -- Druid
+  [102] = "Intellect", -- Balance
+  [103] = "Agility",   -- Feral
+  [104] = "Agility",   -- Guardian
+  [105] = "Intellect", -- Restoration
+
+  -- Demon Hunter
+  [577] = "Agility", -- Havoc
+  [581] = "Agility", -- Vengeance
+
+  -- Evoker
+  [1467] = "Intellect", -- Devastation
+  [1468] = "Intellect", -- Preservation
+  [1473] = "Intellect", -- Augmentation
+}
+
+local function GetPrimaryStatName(unit)
+  if not UnitIsPlayer(unit) then return nil end
+
+  if UnitIsUnit(unit, "player") then
+    local specIndex = GetSpecialization()
+    if specIndex then
+      local specID = GetSpecializationInfo(specIndex)
+      return SPEC_PRIMARY_STAT[specID]
     end
+  else
+    local specID = GetInspectSpecialization(unit)
+    if specID and specID > 0 then
+      return SPEC_PRIMARY_STAT[specID]
+    end
+  end
+
+  return "Primary Stat"
 end
 
 ---Build normalized stat lines from an aura.
 ---@param aura table Aura data
+---@param unit table Unit the aura was applied to
 ---@return string[] lines List of formatted stat lines
-function StatsTracker:GetStatLines(aura)
+function StatsTracker:GetStatLines(aura, unit)
     local lines = {}
     if not aura then
         return lines
@@ -104,7 +181,7 @@ function StatsTracker:GetStatLines(aura)
 
         if total > 0 then
             if entry.label == "Primary" then
-                addLine(total, GetPrimaryStatName(), entry.type == "percent")
+                addLine(total, GetPrimaryStatName(unit), entry.type == "percent")
             else
                 addLine(total, entry.label, entry.type == "percent")
             end

@@ -1,5 +1,5 @@
 --[[============================================================================
-  Addon Initialization
+  AddonSettings.lua
   Purpose:
     - Initialize addon settings and metadata
     - Register debug helpers if available

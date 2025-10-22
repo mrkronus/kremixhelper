@@ -239,7 +239,7 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
         AddSectionHeading(tooltip, "Your Infinite Power")
         local aura = Threads.ScanAura("player")
         if aura then
-            local lines = Stats:GetStatLines(aura)
+            local lines = Stats:GetStatLines(aura, "player")
             for _, line in ipairs(lines) do
                 local currentLine = tooltip:AddLine()
                 tooltip:SetCell(currentLine, 1, colorize(line, Colors.White), "LEFT", 2)

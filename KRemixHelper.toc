@@ -3,7 +3,7 @@
 ## X-Title-With-Spaces: K Remix Helper
 ## Author: Kronus
 ## Notes: K-suite addon to help with remix things
-## Version: 11.2.5.1
+## Version: 11.2.5.2
 ## X-Release-Type: beta
 
 ## IconTexture: Interface\Icons\achievement_raid_argusraid

@@ -36,7 +36,7 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
     -- Stat breakdown lines
     local aura = Threads.ScanAura(unit)
     if aura then
-        local lines = Stats:GetStatLines(aura)
+        local lines = Stats:GetStatLines(aura, unit)
         for _, line in ipairs(lines) do
             tooltip:AddLine(colorize(line, colors.White))
         end
@@ -46,6 +46,7 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
 
     -- Threads info line
     tooltip:AddLine(colorize(FormatWithCommasToThousands(total) .. " Threads", colors.WowToken))
+    tooltip:AddLine(colorize(Threads:GetUnitVersatilityBonus(unit) .. " Limits Unbound Rank", colors.Artifact))
 
     -- Player-specific "today" line
     if UnitIsUnit(unit, "player") then
