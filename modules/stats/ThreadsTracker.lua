@@ -1,8 +1,11 @@
 --[[============================================================================
   ThreadsTracker.lua
   Purpose:
-    - Track Threads totals from Infinite Power aura from Legion Remix
-    - Track daily gain for the player
+    - Track Threads totals from Infinite Power aura (Legion Remix)
+    - Track daily gain for the player, rolling over at daily reset
+    - Maintain last 7 days of history per character
+    - Persist all characters in AceDB global scope for cross-alt comparisons
+    - Store class info for UI colorization
 ============================================================================]]--
 
 local _, Addon = ...
@@ -11,14 +14,8 @@ local _, Addon = ...
 local ThreadsTracker = {}
 Addon.ThreadsTracker = ThreadsTracker
 
--- SavedVariables table
-if not ThreadsDB then ThreadsDB = {} end
-
 -- Spell ID for Infinite Power aura
--- https://www.wowhead.com/spell=1232454/infinite-power
 local THREADS_SPELL_ID = 1232454
-
-
 
 --------------------------------------------------------------------------------
 -- Internal: Aura Scanning
@@ -31,9 +28,7 @@ local function ScanAura(unit)
     local index = 1
     while true do
         local aura = C_UnitAuras.GetAuraDataByIndex(unit, index)
-        if not aura then
-            return nil
-        end
+        if not aura then return nil end
         if aura.spellId == THREADS_SPELL_ID then
             return aura
         end
@@ -41,92 +36,137 @@ local function ScanAura(unit)
     end
 end
 
-
-
 --------------------------------------------------------------------------------
--- Public: Totals
+-- Totals
 --------------------------------------------------------------------------------
 
 ---Get total Threads for a unit (skips XP at index 11).
----@param unit string Unit token
----@return number|nil total Threads total or nil if aura not found
 function ThreadsTracker:GetUnitTotal(unit)
     local aura = ScanAura(unit)
-    if not aura then
-        return nil
-    end
+    if not aura or not aura.points then return nil end
 
     local total = 0
-    for i = 1, 16 do
+    for i, v in ipairs(aura.points) do
         if i ~= 11 then
-            total = total + (aura.points[i] or 0)
+            total = total + (v or 0)
         end
     end
     return total
 end
 
----Get total Threads for a unit (skips XP at index 11).
----@param unit string Unit token
----@return number|nil total Threads total or nil if aura not found
+---Get Versatility bonus (index 5).
 function ThreadsTracker:GetUnitVersatilityBonus(unit)
     local aura = ScanAura(unit)
-    if not aura then
-        return nil
-    end
-
+    if not aura or not aura.points then return nil end
     return aura.points[5] or 0
 end
 
-
-
 --------------------------------------------------------------------------------
--- SavedVariables Helpers
+-- SavedVariables Helpers (AceDB global scope)
 --------------------------------------------------------------------------------
 
----Ensure a character entry exists in ThreadsDB.
----@return table char Character data entry
-local function EnsureChar()
-    local name = UnitName("player") .. "-" .. GetRealmName()
-    if not ThreadsDB[name] then
-        ThreadsDB[name] = { day = date("%m%d%y"), base = 0, today = 0 }
+---Get unique character key (Name-Realm).
+local function GetCharKey()
+    return UnitName("player") .. "-" .. GetRealmName()
+end
+
+---Get the global threads DB, ensuring structure exists.
+local function GetGlobalDB()
+    local db = Addon.LibAceAddon.db.global
+    if not db.threads then
+        db.threads = { chars = {} }
+    elseif not db.threads.chars then
+        db.threads.chars = {}
     end
-    return ThreadsDB[name]
+    return db.threads
+end
+
+---Ensure a character entry exists in the global DB.
+---Adds history, lastTotal, and class fields if missing.
+local function EnsureCharEntry()
+    local g = GetGlobalDB()
+    local key = GetCharKey()
+    if not g.chars[key] then
+        g.chars[key] = { history = {}, lastTotal = 0, class = nil }
+    end
+    return g.chars[key]
+end
+
+---Get a string key for the current daily reset (YYYYMMDD).
+local function GetResetKey()
+    local now = time()
+    local resetIn = C_DateAndTime.GetSecondsUntilDailyReset()
+    local resetEpoch = now + resetIn
+    return date("%Y%m%d", resetEpoch - 86400)
 end
 
 ---Check if the stored day has rolled over and reset if needed.
----@param char table Character data entry
-local function CheckDayRollover(char)
-    local today = date("%m%d%y")
-    if char.day ~= today then
-        char.day  = today
-        char.base = ThreadsTracker:GetUnitTotal("player") or 0
-        char.today = 0
+---If rollover, insert a new history entry and trim to 7 days.
+local function CheckDayRollover(entry, currentTotal)
+    local todayKey = GetResetKey()
+    if not entry.history[1] or entry.history[1].day ~= todayKey then
+        table.insert(entry.history, 1, { day = todayKey, gain = 0 })
+        if #entry.history > 7 then
+            table.remove(entry.history)
+        end
+        entry.lastTotal = currentTotal or 0
     end
 end
-
-
 
 --------------------------------------------------------------------------------
 -- Public: Player Data
 --------------------------------------------------------------------------------
 
----Get the player's total Threads and today's gain.
----@return number total Total Threads
----@return number today Threads gained today
+---Get the player's total Threads, today's gain, and history.
+---@return number total, number today, table history
 function ThreadsTracker:GetPlayerData()
-    local char = EnsureChar()
-    CheckDayRollover(char)
-
+    local entry = EnsureCharEntry()
     local total = self:GetUnitTotal("player") or 0
-    if char.base == 0 then
-        char.base = total
-    end
-    char.today = total - char.base
 
-    return total, char.today
+    -- capture and persist class
+    local _, classFile = UnitClass("player")
+    entry.class = classFile
+
+    CheckDayRollover(entry, total)
+
+    local gain = total - (entry.lastTotal or 0)
+    entry.history[1].gain = gain
+    entry.lastTotal = total
+
+    return total, gain, entry.history
 end
 
+--------------------------------------------------------------------------------
+-- Public: Alt Rankings
+--------------------------------------------------------------------------------
 
+---Get top N alts by today’s gain.
+---@param n number Number of alts to return
+---@return table list { {char="Name-Realm", gain=number, class="MAGE"}, ... }
+function ThreadsTracker:GetTopAlts(n)
+    local g = GetGlobalDB()
+    local todayKey = GetResetKey()
+    local list = {}
+
+    for charKey, data in pairs(g.chars) do
+        if data.history and data.history[1] and data.history[1].day == todayKey then
+            table.insert(list, {
+                char  = charKey,
+                gain  = data.history[1].gain or 0,
+                class = data.class or "PRIEST", -- fallback
+            })
+        end
+    end
+
+    table.sort(list, function(a, b) return a.gain > b.gain end)
+
+    if n and #list > n then
+        local trimmed = {}
+        for i = 1, n do trimmed[i] = list[i] end
+        return trimmed
+    end
+    return list
+end
 
 --------------------------------------------------------------------------------
 -- Export

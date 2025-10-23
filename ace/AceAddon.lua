@@ -47,6 +47,32 @@ Addon.AceOptions = {
             get   = "ShouldHideMinimapButton",
             set   = "ToggleMinimapButton",
         },
+        optionalFeatures = {
+            type    = "group",
+            name    = "Optional Features",
+            order   = 9,
+            inline  = true,
+            args  = {
+                enableTalentAlertSuppression = {
+                    type  = "toggle",
+                    width = "full",
+                    order = 2,
+                    name  = "Suppress Talent Alerts & Tutorials",
+                    desc  = "Toggles suppression of the talent/spellbook button alerts, pulse animations, and tutorial popups.",
+                    get   = "IsTalentAlertSuppressionEnabled",
+                    set   = "EnableTalentAlertSuppression",
+                },
+                enableGroupReporting = {
+                    type  = "toggle",
+                    width = "full",
+                    order = 2,
+                    name  = "Enable Group Reporting",
+                    desc  = "Shows the group names, levels, Limits Unbound rank, and threads count in chat when joining a group. Does not report in raids.",
+                    get   = "IsGroupReportingEnabled",
+                    set   = "EnableGroupReporting",
+                },
+            },
+        },
         scrapping = {
             type    = "group",
             name    = "Scrapping",
@@ -112,6 +138,10 @@ Addon.AceOptionsDefaults = {
             radius     = 90,
             minimapPos = 200,
         },
+
+        -- Optional Features
+        suppressTalentAlerts = false,
+        enableGroupReporting = false
     },
 }
 
@@ -153,6 +183,35 @@ function LibAceAddon:ShouldShowDebugOutput(_)
 end
 
 --------------------------------------------------------------------------------
+-- Talent Alert & Tutorial Suppression Toggle
+--------------------------------------------------------------------------------
+
+function LibAceAddon:IsTalentAlertSuppressionEnabled(_)
+    return self.db.global.suppressTalentAlerts or false
+end
+
+function LibAceAddon:EnableTalentAlertSuppression(_, value)
+    self.db.global.suppressTalentAlerts = value
+    EnableTalentAlertSuppression(value) -- call the suppression API we defined
+end
+
+
+--------------------------------------------------------------------------------
+-- Group Reporting Toggle
+--------------------------------------------------------------------------------
+
+function LibAceAddon:IsGroupReportingEnabled(_)
+    return self.db.global.enableGroupReporting or false
+end
+
+function LibAceAddon:EnableGroupReporting(_, value)
+    self.db.global.enableGroupReporting = value
+    -- If you want to immediately apply/disable reporting logic, call into your
+    -- ReportGroup system here.
+end
+
+
+--------------------------------------------------------------------------------
 -- Addon Lifecycle
 --------------------------------------------------------------------------------
 
@@ -160,6 +219,10 @@ function LibAceAddon:OnEnable()
     if Addon.Initialize then
         Addon:Initialize()
     end
+
+    -- Apply saved suppression state at login/reload
+    local saved = self.db.global.suppressTalentAlerts or false
+    EnableTalentAlertSuppression(saved)
 end
 
 function LibAceAddon:OnInitialize()

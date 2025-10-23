@@ -70,6 +70,14 @@ Addon.Colors = {
 
     -- Custom Tags
     Beledar      = "FFA060FF",
+    LegionFelGreenGlow      = "FF00FF00",
+    LegionCorruptedFelGreen = "FF32CD32",
+    LegionVoidPurple        = "FF6A0DAD",
+    LegionShadowViolet      = "FF8A2BE2",
+    LegionFelfireOrange     = "FFFF4500",
+    LegionAshenGray         = "FF2F4F4F",
+    LegionBlackenedIron     = "FF1C1C1C",
+    LegionSicklyYellowGreen = "FFADFF2F",
 }
 
 

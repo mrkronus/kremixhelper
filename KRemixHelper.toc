@@ -30,8 +30,9 @@ ui\MinimapTooltipProvider.lua
 data\FormattingHelpers.lua
 
 # Stats
-modules\stats\ThreadsTracker.lua
 modules\stats\StatsTracker.lua
+modules\stats\ThreadsTracker.lua
+modules\stats\ThreadsMonitor.lua
 
 # Unit Tooltips
 ui\UnitTooltip.lua
@@ -39,3 +40,6 @@ ui\UnitTooltip.lua
 # Auto Scrapping
 modules\AutoScrapper.lua
 ui\AutoScrapperFrame.lua
+
+# Talent / Spell tutorial popup
+modules\HideTalentAlerts.lua
