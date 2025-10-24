@@ -43,7 +43,7 @@ end
 ---Get total Threads for a unit (skips XP at index 11).
 function ThreadsTracker:GetUnitTotal(unit)
     local aura = ScanAura(unit)
-    if not aura or not aura.points then return nil end
+    if not aura or not aura.points then return 0 end
 
     local total = 0
     for i, v in ipairs(aura.points) do
@@ -82,12 +82,12 @@ local function GetGlobalDB()
 end
 
 ---Ensure a character entry exists in the global DB.
----Adds history, lastTotal, and class fields if missing.
+---Adds history, baselineTotal, and class fields if missing.
 local function EnsureCharEntry()
     local g = GetGlobalDB()
     local key = GetCharKey()
     if not g.chars[key] then
-        g.chars[key] = { history = {}, lastTotal = 0, class = nil }
+        g.chars[key] = { history = {}, baselineTotal = nil, class = nil }
     end
     return g.chars[key]
 end
@@ -102,14 +102,15 @@ end
 
 ---Check if the stored day has rolled over and reset if needed.
 ---If rollover, insert a new history entry and trim to 7 days.
-local function CheckDayRollover(entry, currentTotal)
+local function CheckDayRollover(entry)
     local todayKey = GetResetKey()
     if not entry.history[1] or entry.history[1].day ~= todayKey then
         table.insert(entry.history, 1, { day = todayKey, gain = 0 })
         if #entry.history > 7 then
             table.remove(entry.history)
         end
-        entry.lastTotal = currentTotal or 0
+        -- Clear baseline so it will be re-initialized on first valid read today
+        entry.baselineTotal = nil
     end
 end
 
@@ -121,19 +122,39 @@ end
 ---@return number total, number today, table history
 function ThreadsTracker:GetPlayerData()
     local entry = EnsureCharEntry()
-    local total = self:GetUnitTotal("player") or 0
 
     -- capture and persist class
     local _, classFile = UnitClass("player")
     entry.class = classFile
 
-    CheckDayRollover(entry, total)
+    -- Read current total
+    local total = self:GetUnitTotal("player") or 0
 
-    local gain = total - (entry.lastTotal or 0)
-    entry.history[1].gain = gain
-    entry.lastTotal = total
+    -- Handle day rollover
+    CheckDayRollover(entry)
 
-    return total, gain, entry.history
+    -- Initialize baseline only when we have a valid positive total and no baseline yet
+    if (entry.baselineTotal == nil or entry.baselineTotal < 0) and total > 0 then
+        entry.baselineTotal = total
+    end
+
+    -- Compute today's gain relative to baseline
+    local todayGain
+    if entry.baselineTotal ~= nil and total >= entry.baselineTotal then
+        todayGain = total - entry.baselineTotal
+    else
+        -- If baseline missing or total < baseline (e.g., invalid read), preserve existing gain
+        todayGain = entry.history[1] and entry.history[1].gain or 0
+    end
+
+    -- Persist today's gain without moving baseline
+    if entry.history[1] then
+        entry.history[1].gain = todayGain
+    else
+        table.insert(entry.history, 1, { day = GetResetKey(), gain = todayGain })
+    end
+
+    return total, todayGain, entry.history
 end
 
 --------------------------------------------------------------------------------

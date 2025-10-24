@@ -1,5 +1,5 @@
 --[[============================================================================
-  ThreadsMonitor.lua
+  GroupMonitor.lua
   Purpose:
     - Show compact group summary (non-raid) with Threads + Limits Unbound
 ============================================================================]]--
@@ -61,14 +61,9 @@ local function ReportGroup()
     if IsInRaid() then return end
     if not Addon.LibAceAddon:IsGroupReportingEnabled() then return end
 
-    local num = GetNumGroupMembers()
-    if num == 0 then return end
-
     local lines = {}
     table.insert(lines, " ")
     table.insert(lines, colorize("=== Group Threads & Limits Unbound ===", HEADER_COLOR))
-
-    local prefix = IsInRaid() and "raid" or "party"
 
     local function AddUnit(unit)
         if not UnitExists(unit) then return end
@@ -84,9 +79,13 @@ local function ReportGroup()
     end
 
     AddUnit("player")
-    for i = 1, num do AddUnit(prefix .. i) end
-    table.insert(lines, " ")
+    if not IsInRaid() then
+        for i = 1, GetNumSubgroupMembers() do
+            AddUnit("party" .. i)
+        end
+    end
 
+    table.insert(lines, " ")
     NotifyBlock(lines)
 end
 

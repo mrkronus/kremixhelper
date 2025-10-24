@@ -29,10 +29,13 @@ ui\MinimapTooltipProvider.lua
 # Data
 data\FormattingHelpers.lua
 
-# Stats
-modules\stats\StatsTracker.lua
-modules\stats\ThreadsTracker.lua
-modules\stats\ThreadsMonitor.lua
+# Modules
+modules\StatsTracker.lua
+modules\ThreadsTracker.lua
+modules\GroupMonitor.lua
+modules\Currency.lua
+modules\PlayerIdentity.lua
+modules\ArtifactWeapon.lua
 
 # Unit Tooltips
 ui\UnitTooltip.lua

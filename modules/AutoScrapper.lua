@@ -16,6 +16,7 @@ local kprint = Addon.Settings.kprint
 local AutoScrapper = {}
 Addon.AutoScrapper = AutoScrapper
 
+
 --------------------------------------------------------------------------------
 -- Settings (fallback defaults)
 --------------------------------------------------------------------------------
@@ -26,11 +27,13 @@ AutoScrapper.settings = {
     maxQuality        = Enum.ItemQuality.Rare,
 }
 
+
 --------------------------------------------------------------------------------
 -- Constants
 --------------------------------------------------------------------------------
 
 local SCRAPPING_MACHINE_SLOTS = 9
+
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -96,6 +99,7 @@ local function IsHigherThanEquipped(invType, candidateIlvl)
     return false
 end
 
+
 --------------------------------------------------------------------------------
 -- Filtering
 --------------------------------------------------------------------------------
@@ -119,6 +123,7 @@ function AutoScrapper:IsEligible(itemInfo)
     kprint("Accept", itemInfo.link or "?", "ilvl", itemInfo.itemLevel or 0, "quality", itemInfo.quality or -1)
     return true
 end
+
 
 --------------------------------------------------------------------------------
 -- Scrappable items
@@ -168,29 +173,35 @@ function AutoScrapper:GetScrappableItems()
     return items
 end
 
+
 --------------------------------------------------------------------------------
 -- Scrapping actions
 --------------------------------------------------------------------------------
 
 function AutoScrapper:ScrapItemFromBag(bag, slot)
     kprint("Attempting to scrap bag", bag, "slot", slot)
+
     local itemLoc = ItemLocation:CreateFromBagAndSlot(bag, slot)
     if not (itemLoc and itemLoc:IsValid()) then
-        kprint("Invalid item location for bag", bag, "slot", slot)
         return false
     end
     if not C_Item.CanScrapItem(itemLoc) then
-        kprint("Item not scrappable at bag", bag, "slot", slot)
         return false
     end
 
     C_Container.PickupContainerItem(bag, slot)
-    local slots = { ScrappingMachineFrame.ItemSlots:GetChildren() }
-    for i = 1, SCRAPPING_MACHINE_SLOTS do
-        if not C_ScrappingMachineUI.GetCurrentPendingScrapItemLocationByIndex(i - 1) then
-            slots[i]:Click()
+    if not CursorHasItem() then
+        return false
+    end
+
+    -- Iterate the 9 slot buttons in order
+    local children = { ScrappingMachineFrame.ItemSlots:GetChildren() }
+    for idx, slotFrame in ipairs(children) do
+        local pending = C_ScrappingMachineUI.GetCurrentPendingScrapItemLocationByIndex(idx - 1)
+        if not pending then
+            slotFrame:Click()
             local link = C_Container.GetContainerItemLink(bag, slot)
-            kprint("Placed", link or "?", "into scrapper slot", i)
+            kprint("Placed", link or "?", "into scrapper slot", idx)
             return true
         end
     end

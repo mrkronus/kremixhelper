@@ -332,36 +332,41 @@ function AutoScrapperFrame:ReevaluateScrapper()
     if self._reevaluating then return end
     self._reevaluating = true
 
-    -- Always redraw the grid first
     self:Refresh()
 
     if ScrappingMachineFrame and ScrappingMachineFrame:IsShown() and GetAutoFill() then
-        -- Clear current pending items
+        -- Clear any existing queued items
         C_ScrappingMachineUI.RemoveAllScrapItems()
 
-        -- Delay one frame so the UI state settles before re‑adding
+        -- Defer one frame so slot state is updated
         C_Timer.After(0, function()
             local items = AutoScrapper:GetScrappableItems(
                 GetMaxQuality(),
                 AutoScrapper.settings.minLevelDiff or 0
             )
-            if #items == 0 then
-                kprint("ReevaluateScrapper: no eligible items found")
-            else
-                local filled = 0
-                for _, item in ipairs(items) do
-                    if AutoScrapper:ScrapItemFromBag(item.bag, item.slot) then
-                        filled = filled + 1
-                    end
+            local filled = 0
+            for _, item in ipairs(items) do
+                if AutoScrapper:ScrapItemFromBag(item.bag, item.slot) then
+                    filled = filled + 1
                 end
-                kprint("ReevaluateScrapper: placed", filled, "items after refresh")
             end
+
+            -- Cross‑check with Blizzard’s API
+            local pendingCount = 0
+            for i = 0, 8 do
+                if C_ScrappingMachineUI.GetCurrentPendingScrapItemLocationByIndex(i) then
+                    pendingCount = pendingCount + 1
+                end
+            end
+
+            kprint("ReevaluateScrapper: placed", filled, "items; scrapper now has", pendingCount, "queued")
             self._reevaluating = false
         end)
     else
         self._reevaluating = false
     end
 end
+
 
 --------------------------------------------------------------------------------
 -- Eventing: auto-fill when empty
@@ -387,29 +392,23 @@ f:SetScript("OnEvent", function(_, event, arg1)
         AutoScrapperFrame:Initialize()
 
     elseif event == "SCRAPPING_MACHINE_PENDING_ITEM_CHANGED" then
+        -- only redraw, don’t try to refill here
         if GetAutoFill() then
-            if IsScrapperEmpty() then
-                C_Timer.After(0.4, function()
-                    AutoScrapper:FillNextBatch()
-                end)
-            else
-                -- just redraw the grid to reflect slot state
-                AutoScrapperFrame:Refresh()
-            end
+            AutoScrapperFrame:Refresh()
         end
 
     elseif event == "SCRAPPING_MACHINE_SCRAPPING_FINISHED" then
         if GetAutoFill() then
-            -- don’t refresh here, just schedule a fill after bags update
-            C_Timer.After(0.5, function()
+            C_Timer.After(0.2, function()
                 AutoScrapper:FillNextBatch()
             end)
         end
 
     elseif event == "BAG_UPDATE_DELAYED" then
         if ScrappingMachineFrame and ScrappingMachineFrame:IsShown() then
-            -- now the bag contents are correct, safe to redraw
-            AutoScrapperFrame:ReevaluateScrapper()
+            if IsScrapperEmpty() then
+                AutoScrapperFrame:ReevaluateScrapper()
+            end
         end
     end
 end)
