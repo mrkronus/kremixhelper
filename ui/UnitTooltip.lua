@@ -8,9 +8,10 @@
 
 local _, Addon = ...
 
-local colors  = Addon.Settings.Colors
-local Threads = Addon.ThreadsTracker
-local Stats   = Addon.StatsTracker
+local colors   = Addon.Settings.Colors
+local colorize = Addon.Colorize
+local Threads  = Addon.ThreadsTracker
+local Stats    = Addon.StatsTracker
 
 
 --------------------------------------------------------------------------------

@@ -310,17 +310,47 @@ Addon.Fonts.MainText:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
     Utilities
 ---------------------------------------------------------------------------]]
 
-function colorize(text, color)
+---@param text string
+---@param color string
+---@return string
+function Addon.Colorize(text, color)
     if type(text) ~= "string" then return "" end
     if type(color) ~= "string" then return text end
-    return string.format("\124c%s%s\124r", color:upper(), text)
+    return string.format("|c%s%s|r", color:upper(), text)
 end
 
-function classToColor(class)
+---Wrap text in WoW color codes using RGB values or a RAID_CLASS_COLORS table.
+---@param text string
+---@param r number|table Either red (0–1) or a table with .r/.g/.b
+---@param g number? Green (0–1) if r is a number
+---@param b number? Blue (0–1) if r is a number
+---@return string
+---@diagnostic disable-next-line: lowercase-global
+function Addon.ColorizeRGB(text, r, g, b)
+    local red, green, blue
+
+    if type(r) == "table" then
+        -- Assume it's a RAID_CLASS_COLORS entry
+        red, green, blue = r.r, r.g, r.b
+    else
+        red, green, blue = r, g, b
+    end
+
+    if not (red and green and blue) then
+        return text -- fallback: no color
+    end
+
+    return ("|cff%02x%02x%02x%s|r"):format(red * 255, green * 255, blue * 255, text)
+end
+
+---@param class string
+---@return string
+function Addon.ClassToColor(class)
     return Addon.Colors[class] or Addon.Colors.Grey
 end
 
-function commaFormatInt(i)
+---@param i number
+function Addon.CommaFormatInt(i)
     return tostring(i):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
 end
 

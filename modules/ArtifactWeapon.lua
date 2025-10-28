@@ -121,8 +121,8 @@ function ArtifactWeapon:GetEquippedArtifactWeapons()
             if itemName and itemID and not seen[itemID] then
                 seen[itemID] = true
                 table.insert(weapons, {
-                    icon = icon or texture,
-                    text = itemName,
+                    icon = icon or texture or 134400, -- fallback question mark
+                    text = itemName or "Unknown",
                     itemID = itemID,
                     link = link,
                     slot = slot,

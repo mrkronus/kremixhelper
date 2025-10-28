@@ -7,8 +7,9 @@
 
 local _, KRemixHelper = ...
 
-local Fonts           = KRemixHelper.Fonts
-local Colors          = KRemixHelper.Colors
+local Fonts    = KRemixHelper.Fonts
+local Colors   = KRemixHelper.Colors
+local colorize = KRemixHelper.Colorize
 
 
 ---@class ParentAceAddon : AceAddon
@@ -34,38 +35,54 @@ local ObjectivesView = KRemixHelper.ObjectivesView
 -- Event Handlers
 --------------------------------------------------------------------------------
 
-local function CloseWeaponTraitsUI()
-  local closed = false
-  local RAF = _G.RemixArtifactFrame
-  if RAF and RAF:IsShown() then
-    RAF:Hide()
-    closed = true
-  end
-  local AF = _G.ArtifactFrame
-  if AF and AF:IsShown() then
-    AF:Hide()
-    closed = true
-  end
-  if _G.ItemSocketingFrame and _G.ItemSocketingFrame:IsShown() then
-    if CloseSocketInfo then pcall(CloseSocketInfo) end
-    if _G.ItemSocketingFrame:IsShown() then
-      _G.ItemSocketingFrame:Hide()
-    end
-    closed = true
-  end
-  return closed
-end
-
+---Toggle the Artifact Tree UI.
+--- - If in combat, shows an error and aborts.
+--- - If an artifact/weapon traits UI is already open, closes it.
+--- - Otherwise, attempts to socket the main/offhand weapon to open the tree.
 local function ToggleArtifactTree()
-  if InCombatLockdown and InCombatLockdown() then
-    UIErrorsFrame:AddMessage(L.ERR_COMBAT, 1, 0.1, 0.1)
-    return
-  end
-  if CloseWeaponTraitsUI() then return end
-  pcall(SocketInventoryItem, 16)
-  C_Timer.After(0.05, function()
-    pcall(SocketInventoryItem, 17)
-  end)
+    -- Block in combat
+    if InCombatLockdown and InCombatLockdown() then return end
+
+    -- Local helper: close any existing weapon trait/artifact UIs
+    local function CloseWeaponTraitFrames()
+        local closed = false
+
+        local remixFrame = _G.RemixArtifactFrame
+        if remixFrame and remixFrame:IsShown() then
+            remixFrame:Hide()
+            closed = true
+        end
+
+        local artifactFrame = _G.ArtifactFrame
+        if artifactFrame and artifactFrame:IsShown() then
+            artifactFrame:Hide()
+            closed = true
+        end
+
+        local socketFrame = _G.ItemSocketingFrame
+        if socketFrame and socketFrame:IsShown() then
+            if CloseSocketInfo then pcall(CloseSocketInfo) end
+            if socketFrame:IsShown() then
+                socketFrame:Hide()
+            end
+            closed = true
+        end
+
+        return closed
+    end
+
+    -- If we just closed something, stop here
+    if CloseWeaponTraitFrames() then return end
+
+    -- Otherwise, try to open the artifact tree by socketing weapons
+    if not InCombatLockdown() then
+        pcall(SocketInventoryItem, 16) -- main hand
+        C_Timer.After(0.05, function()
+            if not InCombatLockdown() then
+                pcall(SocketInventoryItem, 17) -- off hand
+            end
+        end)
+    end
 end
 
 ---Handle minimap icon clicks.

@@ -20,7 +20,7 @@ local _, KRemixHelper = ...
 -- InfiniteResearch
 --------------------------------------------------------------------------------
 
-InfiniteResearch = {}
+local InfiniteResearch = {}
 
 function InfiniteResearch:GetInfiniteResearchQuests()
   local results = {}
@@ -58,20 +58,6 @@ end
 --------------------------------------------------------------------------------
 -- Eventing
 --------------------------------------------------------------------------------
-
-SLASH_SPEAKINFINITERESEARCH1 = "/speakresearch"
-SlashCmdList.SPEAKINFINITERESEARCH = function()
-  local quests = InfiniteResearch:GetInfiniteResearchQuests()
-
-  if #quests == 0 then
-    print("No quests found with title containing: infinite research")
-    return
-  end
-
-  for _, quest in ipairs(quests) do
-    print("Found quest:", quest.link)
-  end
-end
 
 hooksecurefunc("SetItemRef", function(link, text, button, chatFrame)
   local questID = link:match("^quest:(%d+):%d+")

@@ -10,6 +10,7 @@ local _, Addon                 = ...
 
 local kprint                   = Addon.kprint
 local Colors                   = Addon.Colors
+local colorize                 = Addon.Colorize
 local KDebug_Register          = Addon.KDebug_Register
 
 local addonName                = Addon.Settings.AddonName

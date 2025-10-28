@@ -10,8 +10,8 @@ Purpose:
 
 local _, KRemixHelper = ...
 
-local Fonts   = KRemixHelper.Fonts
-local Colors  = KRemixHelper.Colors
+local Colors   = KRemixHelper.Colors
+local colorize = KRemixHelper.Colorize
 
 local InfiniteResearch = KRemixHelper.InfiniteResearch
 
@@ -20,8 +20,8 @@ local InfiniteResearch = KRemixHelper.InfiniteResearch
 -- Quest Helpers
 --------------------------------------------------------------------------------
 
----@enum QuestTags
-QuestTags = {
+---@enum Addon.QuestTags
+KRemixHelper.QuestTags = {
   Group       = 1,
   PvP         = 41,
   Raid        = 62,
@@ -36,8 +36,8 @@ QuestTags = {
   Delve       = 288,
 }
 
----@enum QuestFrequency
-QuestFrequency = {
+---@enum Addon.QuestFrequency
+KRemixHelper.QuestFrequency = {
   Default          = 0,
   Daily            = 1,
   Weekly           = 2,
@@ -46,20 +46,20 @@ QuestFrequency = {
 
 -- Atlas mappings
 local ATLAS_BY_FREQUENCY = {
-  [QuestFrequency.Daily]  = "QuestType-Daily",
-  [QuestFrequency.Weekly] = "QuestType-Weekly",
+  [KRemixHelper.QuestFrequency.Daily]  = "QuestType-Daily",
+  [KRemixHelper.QuestFrequency.Weekly] = "QuestType-Weekly",
 }
 
 local ATLAS_BY_TAG = {
-  [QuestTags.Group]      = "QuestType-Group",
-  [QuestTags.PvP]        = "QuestType-PvP",
-  [QuestTags.Dungeon]    = "QuestType-Dungeon",
-  [QuestTags.Raid]       = "QuestType-Raid",
-  [QuestTags.Legendary]  = "QuestType-Legendary",
-  [QuestTags.Scenario]   = "QuestType-Scenario",
-  [QuestTags.Account]    = "QuestType-Account",
-  [QuestTags.CombatAlly] = "QuestType-CombatAlly",
-  [QuestTags.Delve]      = "QuestType-Delve",
+  [KRemixHelper.QuestTags.Group]      = "QuestType-Group",
+  [KRemixHelper.QuestTags.PvP]        = "QuestType-PvP",
+  [KRemixHelper.QuestTags.Dungeon]    = "QuestType-Dungeon",
+  [KRemixHelper.QuestTags.Raid]       = "QuestType-Raid",
+  [KRemixHelper.QuestTags.Legendary]  = "QuestType-Legendary",
+  [KRemixHelper.QuestTags.Scenario]   = "QuestType-Scenario",
+  [KRemixHelper.QuestTags.Account]    = "QuestType-Account",
+  [KRemixHelper.QuestTags.CombatAlly] = "QuestType-CombatAlly",
+  [KRemixHelper.QuestTags.Delve]      = "QuestType-Delve",
 }
 
 local DEFAULT_ATLAS = "QuestNormal" -- generic yellow "!" fallback

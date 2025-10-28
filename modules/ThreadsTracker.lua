@@ -72,14 +72,16 @@ end
 
 ---Get the global threads DB, ensuring structure exists.
 local function GetGlobalDB()
-    local db = Addon.LibAceAddon.db.global
-    if not db.threads then
-        db.threads = { chars = {} }
-    elseif not db.threads.chars then
-        db.threads.chars = {}
+    if not Addon.LibAceAddon or not Addon.LibAceAddon.db or not Addon.LibAceAddon.db.global then
+        return { chars = {} } -- safe fallback
     end
+
+    local db = Addon.LibAceAddon.db.global
+    db.threads = db.threads or { chars = {} }
+    db.threads.chars = db.threads.chars or {}
     return db.threads
 end
+
 
 ---Ensure a character entry exists in the global DB.
 ---Adds history, baselineTotal, and class fields if missing.

@@ -8,7 +8,8 @@ local _, KRemixHelper            = ...
 
 local Fonts                      = KRemixHelper.Fonts
 local Colors                     = KRemixHelper.Colors
-
+local colorize                   = KRemixHelper.Colorize
+local classToColor               = KRemixHelper.ClassToColor
 local PartyView                  = KRemixHelper.PartyView
 local ObjectivesView             = KRemixHelper.ObjectivesView
 

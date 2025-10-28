@@ -6,6 +6,7 @@ local _, KRemixHelper            = ...
 
 local Fonts                      = KRemixHelper.Fonts
 local Colors                     = KRemixHelper.Colors
+local colorize                   = KRemixHelper.Colorize
 
 local LibQTip                    = KRemixHelper.LibQTip
 

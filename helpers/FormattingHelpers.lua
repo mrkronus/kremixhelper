@@ -45,7 +45,6 @@ function FormatWithCommas(num)
 end
 
 
-
 --------------------------------------------------------------------------------
 -- Thousands / Millions Formatting
 --------------------------------------------------------------------------------
@@ -84,32 +83,3 @@ function FormatWithCommasToThousands(num)
     end
 end
 
-
-
---------------------------------------------------------------------------------
--- Colorization
---------------------------------------------------------------------------------
-
----Wrap text in WoW color codes using RGB values or a RAID_CLASS_COLORS table.
----@param text string
----@param r number|table Either red (0–1) or a table with .r/.g/.b
----@param g number? Green (0–1) if r is a number
----@param b number? Blue (0–1) if r is a number
----@return string
----@diagnostic disable-next-line: lowercase-global
-function colorizeRGB(text, r, g, b)
-    local red, green, blue
-
-    if type(r) == "table" then
-        -- Assume it's a RAID_CLASS_COLORS entry
-        red, green, blue = r.r, r.g, r.b
-    else
-        red, green, blue = r, g, b
-    end
-
-    if not (red and green and blue) then
-        return text -- fallback: no color
-    end
-
-    return ("|cff%02x%02x%02x%s|r"):format(red * 255, green * 255, blue * 255, text)
-end
