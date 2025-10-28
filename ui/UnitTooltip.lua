@@ -20,6 +20,8 @@ local Stats   = Addon.StatsTracker
 ---Post-process unit tooltips to inject Threads and Stats information.
 ---@param tooltip GameTooltip
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
+    if not IsInLegionTimerunnerMode() then return end
+
     local _, unit = tooltip:GetUnit()
     if not (unit and UnitIsPlayer(unit)) then
         return
@@ -46,12 +48,9 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
 
     -- Threads info line
     tooltip:AddLine(colorize(FormatWithCommasToThousands(total) .. " Threads", colors.WowToken))
-    tooltip:AddLine(colorize(Threads:GetUnitVersatilityBonus(unit) .. " Limits Unbound Rank", colors.Artifact))
-
-    -- Player-specific "today" line
-    if UnitIsUnit(unit, "player") then
-        local _, today = Threads:GetPlayerData()
-        tooltip:AddLine(colorize("+ " .. FormatWithCommasToThousands(today) .. " Today", colors.White))
+    local verseBonus = Threads:GetUnitVersatilityBonus(unit)
+    if verseBonus then
+        tooltip:AddLine(colorize(Threads:GetUnitVersatilityBonus(unit) .. " Limits Unbound", colors.Artifact))
     end
 
     tooltip:AddLine(" ")

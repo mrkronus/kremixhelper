@@ -268,17 +268,17 @@ Addon.RaidIcons = {
 ---------------------------------------------------------------------------]]
 
 function getClassIcon(class)
-    return ("\124TInterface/Icons/classicon_%s:0\124t"):format(strlower(class))
+    return ("\124TInterface/Icons/classicon_%s:20\124t"):format(strlower(class))
 end
 
 Addon.FactionIcons = {
-    ["Alliance"] = "\124A:poi-alliance:20:20\124a",
-    ["Horde"]    = "\124A:poi-horde:20:20\124a"
+    ["Alliance"] = "\124A:poi-alliance:18:18\124a",
+    ["Horde"]    = "\124A:poi-horde:18:18\124a"
 }
 
 Addon.FactionIconsBig = {
-    ["Alliance"] = "\124A:poi-alliance:24:24\124a",
-    ["Horde"]    = "\124A:poi-horde:24:24\124a"
+    ["Alliance"] = "\124A:poi-alliance:20:20\124a",
+    ["Horde"]    = "\124A:poi-horde:20:20\124a"
 }
 
 Addon.FactionColors = {
@@ -295,12 +295,14 @@ Addon.Fonts = {
     MainHeader = CreateFont("KLib_MainHeaderFont"),
     FooterText = CreateFont("KLib_FooterTextFont"),
     Heading    = CreateFont("KLib_HeadingFont"),
+    Subheading = CreateFont("KLib_SubheadingFont"),
     MainText   = CreateFont("KLib_MainTextFont")
 }
 
-Addon.Fonts.MainHeader:SetFont("Fonts\\FRIZQT__.TTF", 16, "")
+Addon.Fonts.MainHeader:SetFont("Fonts\\FRIZQT__.TTF", 22, "")
 Addon.Fonts.FooterText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
-Addon.Fonts.Heading:SetFont("Fonts\\FRIZQT__.TTF", 14, "")
+Addon.Fonts.Heading:SetFont("Fonts\\FRIZQT__.TTF", 18, "")
+Addon.Fonts.Subheading:SetFont("Fonts\\FRIZQT__.TTF", 16, "")
 Addon.Fonts.MainText:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
 
 

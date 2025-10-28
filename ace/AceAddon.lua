@@ -61,16 +61,7 @@ Addon.AceOptions = {
                     desc  = "Toggles suppression of the talent/spellbook button alerts, pulse animations, and tutorial popups.",
                     get   = "IsTalentAlertSuppressionEnabled",
                     set   = "EnableTalentAlertSuppression",
-                },
-                enableGroupReporting = {
-                    type  = "toggle",
-                    width = "full",
-                    order = 2,
-                    name  = "Enable Group Reporting",
-                    desc  = "Shows the group names, levels, Limits Unbound rank, and threads count in chat when joining a group. Does not report in raids.",
-                    get   = "IsGroupReportingEnabled",
-                    set   = "EnableGroupReporting",
-                },
+                }
             },
         },
         scrapping = {
@@ -141,7 +132,6 @@ Addon.AceOptionsDefaults = {
 
         -- Optional Features
         suppressTalentAlerts = false,
-        enableGroupReporting = false
     },
 }
 
@@ -193,21 +183,6 @@ end
 function LibAceAddon:EnableTalentAlertSuppression(_, value)
     self.db.global.suppressTalentAlerts = value
     EnableTalentAlertSuppression(value) -- call the suppression API we defined
-end
-
-
---------------------------------------------------------------------------------
--- Group Reporting Toggle
---------------------------------------------------------------------------------
-
-function LibAceAddon:IsGroupReportingEnabled(_)
-    return self.db.global.enableGroupReporting or false
-end
-
-function LibAceAddon:EnableGroupReporting(_, value)
-    self.db.global.enableGroupReporting = value
-    -- If you want to immediately apply/disable reporting logic, call into your
-    -- ReportGroup system here.
 end
 
 

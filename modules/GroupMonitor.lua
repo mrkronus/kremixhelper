@@ -1,113 +1,132 @@
---[[============================================================================
-  GroupMonitor.lua
-  Purpose:
-    - Show compact group summary (non-raid) with Threads + Limits Unbound
-============================================================================]]--
+--[[-------------------------------------------------------------------------
+GroupMonitor.lua
+Purpose:
+  - Maintain a live database of current group members (1–40)
+  - Single public API: ThreadsMonitor:GetGroupData()
+  - Stable schema with explicit fields for tooltip rendering
+---------------------------------------------------------------------------]]
 
 local _, Addon = ...
-
-local colors  = Addon.Settings.Colors
 local ThreadsTracker = Addon.ThreadsTracker
-
-local HEADER_COLOR = "ffaaff00"
 
 ---@class ThreadsMonitor
 local ThreadsMonitor = {}
 Addon.ThreadsMonitor = ThreadsMonitor
 
+-- Internal database
+ThreadsMonitor.db = {
+  group = {}, -- unified list of members
+}
+
+local CONFIG = {
+  SPELL_ID_LIMITS_UNBOUND = 1245947,
+  THREADS_PER_RANK        = 50000,
+}
+
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
 
-local function NotifyBlock(lines)
-    for _, line in ipairs(lines) do
-        DEFAULT_CHAT_FRAME:AddMessage(line)
-    end
+local ROLE_ICONS = {
+  TANK    = "|TInterface\\GroupFrame\\UI-Group-LeaderIcon:16:16:0:0:64:64:0:32:0:32|t",
+  HEALER  = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:1:20|t",
+  DAMAGER = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:22:41|t",
+}
+
+---Return icon texture string for a role
+function ThreadsMonitor:GetRoleIcon(role)
+  return ROLE_ICONS[role] or ""
 end
 
-local function ColoredPlayerLink(unit)
-    local name, realm = UnitName(unit)
-    if not name then return "Unknown" end
-    realm = realm or GetRealmName()
-    local _, classFile = UnitClass(unit)
-    local color = RAID_CLASS_COLORS[classFile] or NORMAL_FONT_COLOR
-    -- clickable player link
-    local link = string.format("|Hplayer:%s-%s|h%s-%s|h", name, realm, name, realm)
-    return string.format("|c%s%s|r", color.colorStr, link)
+---Return icon texture ID for a spell
+function ThreadsMonitor:GetSpellIcon(spellID)
+  return (spellID and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellID)) or 134400
 end
 
-local function FormatThreads(total)
-    return colorize(FormatWithCommasToThousands(total) .. " Threads", colors.WowToken)
-end
-
--- Helper function to get spell icon
-local function GetSpellIcon(spellID)
-  if not spellID or not C_Spell.GetSpellTexture then return 134400 end
-  return C_Spell.GetSpellTexture(spellID) or 134400
-end
-
-local LIMITS_UNBOUND_SPELL_ID = 1245947
-local function FormatLimitsUnbound(rank)
-    local icon = ("|T%d:0|t"):format(GetSpellIcon(LIMITS_UNBOUND_SPELL_ID)) or ""
-    return colorize(tostring(rank), colors.Artifact) .. " " .. icon
-end
-
-
---------------------------------------------------------------------------------
--- Reporting
---------------------------------------------------------------------------------
-
-local function ReportGroup()
-    if IsInRaid() then return end
-    if not Addon.LibAceAddon:IsGroupReportingEnabled() then return end
-
-    local lines = {}
-    table.insert(lines, " ")
-    table.insert(lines, colorize("=== Group Threads & Limits Unbound ===", HEADER_COLOR))
-
-    local function AddUnit(unit)
-        if not UnitExists(unit) then return end
-        local total = ThreadsTracker:GetUnitTotal(unit)
-        if not total then return end
-        local rank = math.floor(total / 50000)
-        table.insert(lines, string.format("%s (%s) | %s | %s",
-            ColoredPlayerLink(unit),
-            UnitLevel(unit) or "?",
-            FormatLimitsUnbound(rank),
-            FormatThreads(total)
-        ))
-    end
-
-    AddUnit("player")
-    if not IsInRaid() then
-        for i = 1, GetNumSubgroupMembers() do
-            AddUnit("party" .. i)
-        end
-    end
-
-    table.insert(lines, " ")
-    NotifyBlock(lines)
+---Return class color string (hex) for a unit
+function ThreadsMonitor:GetClassColor(unit)
+  local _, classFile = UnitClass(unit)
+  local color = RAID_CLASS_COLORS[classFile] or NORMAL_FONT_COLOR
+  return color.colorStr
 end
 
 --------------------------------------------------------------------------------
--- Event Handling
+-- Member Builder
+--------------------------------------------------------------------------------
+
+local function BuildMember(unit)
+  if not UnitExists(unit) then
+    return {
+      unit              = unit,
+      name              = nil,
+      realm             = nil,
+      class             = nil,
+      level             = nil,
+      role              = nil,
+      totalThreads      = 0,
+      limitsUnboundRank = 0,
+    }
+  end
+
+  local total = ThreadsTracker:GetUnitTotal(unit) or 0
+  local rank  = math.floor(total / CONFIG.THREADS_PER_RANK)
+  local name, realm = UnitName(unit)
+  local _, classFile = UnitClass(unit)
+
+  return {
+    unit              = unit,
+    name              = name,
+    realm             = realm or GetRealmName(),
+    class             = classFile,
+    level             = UnitLevel(unit) or "?",
+    role              = UnitGroupRolesAssigned(unit),
+    totalThreads      = total,
+    limitsUnboundRank = rank,
+  }
+end
+
+--------------------------------------------------------------------------------
+-- Core Update
+--------------------------------------------------------------------------------
+
+function ThreadsMonitor:UpdateGroup()
+  wipe(self.db.group)
+
+  if IsInRaid() then
+    for i = 1, GetNumGroupMembers() do
+      table.insert(self.db.group, BuildMember("raid" .. i))
+    end
+  elseif IsInGroup() then
+    table.insert(self.db.group, BuildMember("player"))
+    for i = 1, GetNumSubgroupMembers() do
+      table.insert(self.db.group, BuildMember("party" .. i))
+    end
+  else
+    table.insert(self.db.group, BuildMember("player"))
+  end
+end
+
+--------------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------------
+
+---Return a fresh snapshot of the current group (1–40 members)
+---@return table[] members
+function ThreadsMonitor:GetGroupData()
+  self:UpdateGroup()
+  return self.db.group
+end
+
+--------------------------------------------------------------------------------
+-- Event Hook: keep DB fresh
 --------------------------------------------------------------------------------
 
 local f = CreateFrame("Frame")
-f:RegisterEvent("GROUP_JOINED")
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
+f:RegisterEvent("GROUP_ROSTER_UPDATE")
+f:RegisterEvent("UNIT_CONNECTION")
+f:RegisterEvent("UNIT_LEVEL")
+f:RegisterEvent("UNIT_NAME_UPDATE")
 
-f:SetScript("OnEvent", function(_, event)
-    if event == "GROUP_JOINED" then
-        if not IsInRaid() then
-            ReportGroup()
-        end
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        local isInstance, instanceType = IsInInstance()
-        if isInstance and instanceType ~= "raid" then
-            ReportGroup()
-        end
-    end
+f:SetScript("OnEvent", function()
+  ThreadsMonitor:UpdateGroup()
 end)
-
-

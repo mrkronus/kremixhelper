@@ -100,6 +100,41 @@ function ArtifactWeapon:GetIncreasedTraitSpellsAndRanks()
     return nil
 end
 
+---Returns a list of currently equipped Artifact weapons with metadata.
+---Deduplicates identical weapons across slots.
+---@return table[] List of weapon tables with fields:
+---  icon: string — Texture path for the weapon icon.
+---  text: string — Localized item name.
+---  itemID: number — Numeric item ID.
+---  link: string — Full item link string.
+---  slot: number — Inventory slot used (16, 17, or 18).
+function ArtifactWeapon:GetEquippedArtifactWeapons()
+    local slots = {16, 17, 18} -- Main hand, Off-hand, Ranged
+    local seen = {}
+    local weapons = {}
+
+    for _, slot in ipairs(slots) do
+        local link = GetInventoryItemLink("player", slot)
+        if link then
+            local icon = GetInventoryItemTexture("player", slot)
+            local itemName, _, _, _, _, _, _, _, _, texture, itemID = C_Item.GetItemInfo(link)
+            if itemName and itemID and not seen[itemID] then
+                seen[itemID] = true
+                table.insert(weapons, {
+                    icon = icon or texture,
+                    text = itemName,
+                    itemID = itemID,
+                    link = link,
+                    slot = slot,
+                })
+            end
+        end
+    end
+
+    return weapons
+end
+
+
 --------------------------------------------------------------------------------
 -- Export
 --------------------------------------------------------------------------------

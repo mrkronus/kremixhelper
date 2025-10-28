@@ -24,7 +24,6 @@ AddonSettings.lua
 ace\AceAddon.lua
 ace\MinimapTooltip.lua
 ace\MinimapIcon.lua
-ui\MinimapTooltipProvider.lua
 
 # Data
 data\FormattingHelpers.lua
@@ -36,9 +35,16 @@ modules\GroupMonitor.lua
 modules\Currency.lua
 modules\PlayerIdentity.lua
 modules\ArtifactWeapon.lua
+modules\InfiniteResearch.lua
 
 # Unit Tooltips
 ui\UnitTooltip.lua
+
+# Minimap Tooltip
+ui\TooltipMainView.lua
+ui\TooltipPartyView.lua
+ui\TooltipObjectivesView.lua
+ui\MinimapTooltipProvider.lua
 
 # Auto Scrapping
 modules\AutoScrapper.lua
