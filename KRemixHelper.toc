@@ -41,9 +41,9 @@ modules\InfiniteResearch.lua
 ui\UnitTooltip.lua
 
 # Minimap Tooltip
-ui\TooltipMainView.lua
 ui\TooltipPartyView.lua
 ui\TooltipObjectivesView.lua
+ui\TooltipMainView.lua
 ui\MinimapTooltipProvider.lua
 
 # Auto Scrapping

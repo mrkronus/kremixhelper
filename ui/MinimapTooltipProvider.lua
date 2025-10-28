@@ -99,6 +99,7 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
   -- Footer
   tooltip:AddSeparator(3, 0, 0, 0, 0)
   tooltip:AddSeparator()
+  tooltip:AddSeparator(3, 0, 0, 0, 0)
 
   tooltip:SetFont(Fonts.FooterText)
 
@@ -111,7 +112,7 @@ function MinimapTooltipProvider:PopulateTooltip(tooltip)
     tooltip:GetColumnCount())
 
   currentLine = tooltip:AddLine()
-  tooltip:SetCell(currentLine, 1, colorize("Hold alt for objectives | Ctrl for party info", Colors.Grey), nil, "LEFT",
+  tooltip:SetCell(currentLine, 1, colorize("Hold alt for objectives | ctrl for group info", Colors.Grey), nil, "LEFT",
     tooltip:GetColumnCount())
 end
 

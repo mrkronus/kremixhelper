@@ -46,14 +46,28 @@ local function AddTooltipToLine(tooltip, lineIndex, onEnter)
 end
 
 local function AddSubTooltipLine(tooltip, label, populateFunc)
-    local line = tooltip:AddLine(label .. " >")
+    local line = tooltip:AddLine()
+    tooltip:SetCell(line, 1, label, nil, "LEFT")
+    tooltip:SetCell(line, tooltip:GetColumnCount(), " >", nil, "RIGHT")
 
     tooltip:SetLineScript(line, "OnEnter", function(cell)
         -- Acquire a new tooltip
         local subTip = LibQTip:Acquire("KRemixHelperSubTooltip", 1, "LEFT")
         subTip:Clear()
-        subTip:SmartAnchorTo(cell)
-        subTip:SetAutoHideDelay(0.1, tooltip)
+
+        -- Decide which side of the screen we’re on
+        local x = cell:GetCenter()
+        local screenWidth = UIParent:GetWidth()
+
+        if x < screenWidth / 2 then
+            -- Anchor to the right of the cell
+            subTip:SetPoint("LEFT", cell, "TOPRIGHT", 0, 0)
+        else
+            -- Anchor to the left of the cell
+            subTip:SetPoint("RIGHT", cell, "TOPLEFT", 0, 0)
+        end
+
+        subTip:SetAutoHideDelay(1, UIParent)
 
         -- Populate with the requested view
         populateFunc(subTip)
@@ -125,8 +139,7 @@ local function AddPlayerIdentitySection(tooltip)
 
     tooltip:SetFont(Fonts.MainHeader)
     local headerLine = tooltip:AddLine()
-    tooltip:SetCell(headerLine, 1,
-        getClassIcon(classToken) .. " " .. colorize(player.name .. " - " .. player.realm, classToColor(classToken)))
+    tooltip:SetCell(headerLine, 1, getClassIcon(classToken) .. " " .. colorize(player.name .. " - " .. player.realm, classToColor(classToken)))
     tooltip:SetCell(headerLine, 2, KRemixHelper.FactionIcons[faction])
 
     tooltip:SetFont(Fonts.MainText)
@@ -233,7 +246,8 @@ end
 local function AddSubMenusSection(tooltip)
     tooltip:AddSeparator(10, 0, 0, 0, 0)
     tooltip:AddSeparator()
-    AddSubTooltipLine(tooltip, "Party Info", function(subTip)
+    tooltip:AddSeparator(3, 0, 0, 0, 0)
+    AddSubTooltipLine(tooltip, "Group Info", function(subTip)
         PartyView:Populate(subTip)
     end)
 

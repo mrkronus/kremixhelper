@@ -22,7 +22,6 @@ local tooltip, provider
 local ParentAceAddon = LibStub("AceAddon-3.0"):GetAddon(addonName)
 
 
-
 --------------------------------------------------------------------------------
 -- MinimapTooltip Module
 --------------------------------------------------------------------------------
