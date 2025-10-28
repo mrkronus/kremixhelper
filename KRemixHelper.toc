@@ -2,14 +2,14 @@
 ## Title: KRemixHelper
 ## X-Title-With-Spaces: K Remix Helper
 ## Author: Kronus
-## Notes: K-suite addon to help with remix things
-## Version: 11.2.5.2
+## Notes: Quality-of-life tools for the Legion Remix event
+## Version: 11.2.5.3
 ## X-Release-Type: beta
 
-## IconTexture: Interface\Icons\achievement_raid_argusraid
+## IconTexture: Interface/Icons/achievement_raid_argusraid
 ## SavedVariables: KRemixHelperDB
 
-## Dependencies: 
+## Dependencies:
 ## OptionalDeps: Ace3, KDebug
 ## LoadOnDemand: 0
 
@@ -17,39 +17,39 @@
 Embeds.xml
 #@end-no-lib-strip@
 
-libs\KLibLite.lua
+libs/KLibLite.lua
 AddonSettings.lua
 
-# Ace / Broilerplate
-ace\AceAddon.lua
-ace\MinimapTooltip.lua
-ace\MinimapIcon.lua
+# Ace / Boilerplate
+ace/AceAddon.lua
+ace/MinimapTooltip.lua
+ace/MinimapIcon.lua
 
 # Helpers
-helpers\FormattingHelpers.lua
-helpers\TooltipHelpers.lua
+helpers/FormattingHelpers.lua
+helpers/TooltipHelpers.lua
 
 # Modules
-modules\StatsTracker.lua
-modules\ThreadsTracker.lua
-modules\GroupMonitor.lua
-modules\Currency.lua
-modules\PlayerIdentity.lua
-modules\ArtifactWeapon.lua
-modules\InfiniteResearch.lua
+modules/StatsTracker.lua
+modules/ThreadsTracker.lua
+modules/GroupMonitor.lua
+modules/Currency.lua
+modules/PlayerIdentity.lua
+modules/ArtifactWeapon.lua
+modules/InfiniteResearch.lua
 
 # Unit Tooltips
-ui\UnitTooltip.lua
+ui/UnitTooltip.lua
 
 # Minimap Tooltip
-ui\TooltipPartyView.lua
-ui\TooltipObjectivesView.lua
-ui\TooltipMainView.lua
-ui\MinimapTooltipProvider.lua
+ui/TooltipPartyView.lua
+ui/TooltipObjectivesView.lua
+ui/TooltipMainView.lua
+ui/MinimapTooltipProvider.lua
 
 # Auto Scrapping
-modules\AutoScrapper.lua
-ui\AutoScrapperFrame.lua
+modules/AutoScrapper.lua
+ui/AutoScrapperFrame.lua
 
 # Talent / Spell tutorial popup
-modules\HideTalentAlerts.lua
+modules/HideTalentAlerts.lua
