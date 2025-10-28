@@ -183,7 +183,7 @@ end
 
 function LibAceAddon:EnableTalentAlertSuppression(_, value)
     self.db.global.suppressTalentAlerts = value
-    EnableTalentAlertSuppression(value) -- call the suppression API we defined
+    Addon.HideTalentAlerts:Enable(value) -- call the suppression API we defined
 end
 
 
@@ -198,7 +198,7 @@ function LibAceAddon:OnEnable()
 
     -- Apply saved suppression state at login/reload
     local saved = self.db.global.suppressTalentAlerts or false
-    EnableTalentAlertSuppression(saved)
+    Addon.HideTalentAlerts:Enable(saved)
 end
 
 function LibAceAddon:OnInitialize()

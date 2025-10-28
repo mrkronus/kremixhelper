@@ -1,18 +1,25 @@
---[[-------------------------------------------------------------------------
-HideTalentAlerts.lua
-Purpose:
-  Provide functions to enable/disable suppression of Blizzard’s tutorial popups
-  and talent/spellbook micro button alerts, while preserving and restoring the
-  previous tutorial state. Actively dismisses any visible popups when enabled.
-
-Notes:
-  - Only affects PlayerSpellsMicroButton (talent/spellbook).
-  - Uses hooksecurefunc to avoid taint.
-  - Exposes EnableTalentAlertSuppression(flag) for external control.
-  - Restores prior "showTutorials" CVar when suppression is disabled.
----------------------------------------------------------------------------]]
+--[[-----------------------------------------------------------------------------
+  HideTalentAlerts.lua
+  Purpose:
+    - Provide functions to enable/disable suppression of Blizzard’s tutorial popups
+    - Suppress talent/spellbook micro button alerts and pulses
+    - Preserve and restore the previous tutorial state
+    - Actively dismiss any visible popups when enabled
+  Notes:
+    - Only affects PlayerSpellsMicroButton (talent/spellbook)
+    - Uses hooksecurefunc to avoid taint
+    - Exposes Addon.HideTalentAlerts:Enable(flag) for external control
+    - Restores prior "showTutorials" CVar when suppression is disabled
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
+
+--------------------------------------------------------------------------------
+-- Module
+--------------------------------------------------------------------------------
+
+---@class HideTalentAlerts
+local HideTalentAlerts = {}
 
 local suppressionEnabled = false
 local previousTutorialState = nil
@@ -33,7 +40,6 @@ local function HidePulse(microButton)
     end
 end
 
-
 --------------------------------------------------------------------------------
 -- Hooks
 --------------------------------------------------------------------------------
@@ -46,7 +52,9 @@ hooksecurefunc("MicroButtonPulse", HidePulse)
 -- Public API
 --------------------------------------------------------------------------------
 
-function EnableTalentAlertSuppression(flag)
+---Enable or disable suppression of Blizzard tutorial popups and talent alerts.
+---@param flag boolean True to enable suppression, false to disable
+function HideTalentAlerts:Enable(flag)
     if flag and not suppressionEnabled then
         suppressionEnabled = true
         previousTutorialState = GetCVar("showTutorials")
@@ -73,3 +81,9 @@ function EnableTalentAlertSuppression(flag)
         end
     end
 end
+
+--------------------------------------------------------------------------------
+-- Export
+--------------------------------------------------------------------------------
+
+Addon.HideTalentAlerts = HideTalentAlerts

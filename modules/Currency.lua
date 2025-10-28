@@ -1,36 +1,55 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   Currency.lua
-============================================================================]]--
+  Purpose:
+    - Provide a unified API for accessing Legion Remix currency values
+    - Expose constants for known currency IDs
+  Notes:
+    - All constants and methods are namespaced under Addon.Currency
+    - Defensive checks ensure safe fallback values
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
-
-CURRENCY_INFINITE_KNOWLEDGE = 3292
-CURRENCY_INFINITE_POWER = 3268
-CURRENCY_BRONZE = 3252
 
 --------------------------------------------------------------------------------
 -- Module
 --------------------------------------------------------------------------------
 
+---@class Currency
 local Currency = {}
 
--- Returns the current quantity of a given currency ID
--- @param currencyID (number) The currency type ID (e.g. 1166 for Timewarped Badge)
--- @return number Current amount owned, or 0 if not found
+--------------------------------------------------------------------------------
+-- Currency Constants
+--------------------------------------------------------------------------------
+
+Currency.INFINITE_KNOWLEDGE = 3292
+Currency.INFINITE_POWER     = 3268
+Currency.BRONZE             = 3252
+
+--------------------------------------------------------------------------------
+-- API
+--------------------------------------------------------------------------------
+
+---Get information about a currency.
+---@param currencyID number Currency type ID (e.g. 1166 for Timewarped Badge)
+---@return string|nil name
+---@return number|nil quantity
+---@return number|nil iconFileID
 function Currency:Get(currencyID)
     if not currencyID then
-        return 0
+        return nil, 0, nil
     end
 
     local info = C_CurrencyInfo.GetCurrencyInfo(currencyID)
     if info then
         return info.name, info.quantity, info.iconFileID
     end
+
+    return nil, 0, nil
 end
 
--- Returns the icon texture ID of a given currency ID
--- @param currencyID (number) The currency type ID
--- @return number|nil Icon file ID, or nil if not found
+---Get the icon texture ID of a given currency.
+---@param currencyID number Currency type ID
+---@return number|nil iconFileID
 function Currency:GetIcon(currencyID)
     if not currencyID then
         return nil

@@ -1,23 +1,22 @@
---[[-------------------------------------------------------------------------
-TooltipPartyView.lua
-Purpose:
-  Provides tooltip content for the current group using ThreadsMonitor data.
-  Columns: Role | Level | Name | Realm | Threads | Limits
-  - Click headers to sort by that column (toggle ascending/descending)
-  - Hover a row to highlight it
-  - Left-click a row to whisper that player
-  - Right-click a row to open the standard player context menu
-  - Section header shows role counts (tank/healer/dps)
----------------------------------------------------------------------------]]
+--[[-----------------------------------------------------------------------------
+  TooltipPartyView.lua
+  Purpose:
+    - Provide tooltip content for the current group using GroupMonitor data
+    - Columns: Role | Level | Name | Realm | Threads | Limits
+    - Click headers to sort by that column (toggle ascending/descending)
+    - Hover a row to highlight it
+    - Left-click a row to whisper that player
+    - Right-click a row to open the standard player context menu
+    - Section header shows role counts (tank/healer/dps)
+-------------------------------------------------------------------------------]]--
 
-local _, KRemixHelper = ...
+local _, Addon = ...
 
-local Fonts    = KRemixHelper.Fonts
-local Colors   = KRemixHelper.Colors
-local colorize = KRemixHelper.Colorize
+local Fonts         = Addon.Fonts
+local Colors        = Addon.Colors
+local colorize      = Addon.Colorize
 
-local Monitor  = KRemixHelper.ThreadsMonitor
-
+local GroupMonitor  = Addon.GroupMonitor
 
 --------------------------------------------------------------------------------
 -- Sort State
@@ -41,7 +40,7 @@ local SORT_FUNCS = {
 
 local function CountRoles()
     local counts = { TANK = 0, HEALER = 0, DAMAGER = 0 }
-    for _, m in ipairs(Monitor:GetGroupData()) do
+    for _, m in ipairs(GroupMonitor:GetGroupData()) do
         if m.role and counts[m.role] ~= nil then
             counts[m.role] = counts[m.role] + 1
         end
@@ -50,15 +49,11 @@ local function CountRoles()
 end
 
 local function BuildRoleSummary(counts)
-    local tankIcon   = INLINE_TANK_ICON
-    local healerIcon = INLINE_HEALER_ICON
-    local dpsIcon    = INLINE_DAMAGER_ICON
-
     return string.format(
         "|cffaaaaaa%s %d  %s %d  %s %d|r",
-        tankIcon, counts.TANK,
-        healerIcon, counts.HEALER,
-        dpsIcon, counts.DAMAGER
+        INLINE_TANK_ICON, counts.TANK,
+        INLINE_HEALER_ICON, counts.HEALER,
+        INLINE_DAMAGER_ICON, counts.DAMAGER
     )
 end
 
@@ -69,10 +64,7 @@ local function AddPartyViewHeading(tooltip)
     local counts = CountRoles()
     local summary = BuildRoleSummary(counts)
 
-    -- Section name left-aligned
     tooltip:SetCell(line, 1, colorize("Group Info", Colors.Header), Fonts.Heading, "LEFT", tooltip:GetColumnCount()-2)
-
-    -- Role summary right-aligned, smaller font, spanning remaining columns
     tooltip:SetCell(line, tooltip:GetColumnCount()-1, summary, Fonts.MainText, "RIGHT", 2)
 
     tooltip:AddSeparator()
@@ -86,11 +78,11 @@ local function ColorizeClassText(text, classFile)
 end
 
 local function FormatThreads(total)
-    return colorize(FormatWithCommasToThousands(total or 0), Colors.WowToken)
+    return colorize(Addon.FormatWithCommasToThousands(total or 0), Colors.WowToken)
 end
 
 local function FormatLimitsUnbound(rank)
-    local icon = ("|T%d:0|t"):format(Monitor:GetSpellIcon(Monitor.SPELL_ID_LIMITS_UNBOUND))
+    local icon = ("|T%d:0|t"):format(GroupMonitor:GetSpellIcon(GroupMonitor.SPELL_ID_LIMITS_UNBOUND))
     return colorize(tostring(rank or 0), Colors.Artifact) .. " " .. icon
 end
 
@@ -101,7 +93,7 @@ local function RequestSort(tooltip, key)
         sortKey   = key
         ascending = true
     end
-    KRemixHelper.UI.TooltipProvider:PopulateTooltip(tooltip)
+    Addon.UI.TooltipProvider:PopulateTooltip(tooltip)
     tooltip:Show()
 end
 
@@ -137,7 +129,7 @@ local function AddPartyRows(tooltip)
     tooltip:SetColumnLayout(6, "LEFT", "CENTER", "LEFT", "LEFT", "RIGHT", "RIGHT")
     AddSortableHeader(tooltip)
 
-    local data = Monitor:GetGroupData()
+    local data = GroupMonitor:GetGroupData()
 
     table.sort(data, function(a,b)
         local cmp = SORT_FUNCS[sortKey]
@@ -151,7 +143,7 @@ local function AddPartyRows(tooltip)
 
     for _, m in ipairs(data) do
         local line = tooltip:AddLine()
-        tooltip:SetCell(line, 1, Monitor:GetRoleIcon(m.role))
+        tooltip:SetCell(line, 1, GroupMonitor:GetRoleIcon(m.role))
         tooltip:SetCell(line, 2, tostring(m.level or "?"))
         tooltip:SetCell(line, 3, ColorizeClassText(m.name, m.class))
         tooltip:SetCell(line, 4, ColorizeClassText(m.realm, m.class))
@@ -189,25 +181,23 @@ end
 -- PartyView
 --------------------------------------------------------------------------------
 
+---@class PartyView
 local PartyView = {}
 
+---Populate the party/group tooltip.
+---@param tooltip table
 function PartyView:Populate(tooltip)
     tooltip:EnableMouse(true)
     tooltip:SetColumnLayout(6, "LEFT", "CENTER", "LEFT", "LEFT", "RIGHT", "RIGHT")
 
-    if IsInLegionTimerunnerMode() then
+    if Addon.IsInLegionTimerunnerMode() then
         AddPartyViewHeading(tooltip)
         AddPartyRows(tooltip)
     else
         local line = tooltip:AddLine()
-        tooltip:SetCell(
-            line,
-            1,
+        tooltip:SetCell(line, 1,
             colorize("The current character is not a Legion Remix character", Colors.Grey),
-            nil,
-            "LEFT",
-            tooltip:GetColumnCount()
-        )
+            nil, "LEFT", tooltip:GetColumnCount())
     end
 end
 
@@ -215,4 +205,4 @@ end
 -- Export
 --------------------------------------------------------------------------------
 
-KRemixHelper.PartyView = PartyView
+Addon.PartyView = PartyView

@@ -1,23 +1,29 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   StatsTracker.lua
   Purpose:
     - Parse Infinite Power aura stat effects
     - Return normalized stat lines for display
-============================================================================]]--
+  Notes:
+    - Uses defensive checks for aura data
+    - Provides canonical mapping and display spec for tooltip rendering
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
+
+--------------------------------------------------------------------------------
+-- Module
+--------------------------------------------------------------------------------
 
 ---@class StatsTracker
 local StatsTracker = {}
 Addon.StatsTracker = StatsTracker
-
 
 --------------------------------------------------------------------------------
 -- Stat Mapping
 --------------------------------------------------------------------------------
 
 -- Canonical mapping of aura.points indices
--- NOTE: this is unused and is just here as documentation of:
+-- NOTE: This is unused directly, but documents the mapping from:
 -- https://www.wowhead.com/spell=1232454/infinite-power
 StatsTracker.STAT_MAP = {
     [1]  = "Primary Stats",   -- Str/Agi/Int
@@ -30,14 +36,13 @@ StatsTracker.STAT_MAP = {
     [8]  = "Leech",
     [9]  = "Avoidance",
     [10] = "Experience Gain", -- from kills
-    [11] = "Experience Gain", -- from quests (though should be the same as the other)
+    [11] = "Experience Gain", -- from quests (duplicate of 10)
     [12] = "Stamina",
     [13] = "Unknown Stat",    -- usually the flat primary stat increase
     [14] = "Armor %",
     [15] = "Mastery Rating",
-    [16] = "Stamina",         -- for some reason it's split into two stats
+    [16] = "Stamina",         -- split into multiple indices
 }
-
 
 --------------------------------------------------------------------------------
 -- Display Spec (order + grouping)
@@ -58,112 +63,81 @@ StatsTracker.STAT_DISPLAY = {
     { label = "Avoidance",       type = "flat",    indices = { 9 } },
     { label = "Armor",           type = "percent", indices = { 14 } },
     { label = "Experience Gain", type = "percent", indices = { 10 } },
-    -- 11 is ignored since it's a duplicate of 10
+    -- index 11 ignored (duplicate of 10)
 }
 
+--------------------------------------------------------------------------------
+-- Primary Stat Mapping
+--------------------------------------------------------------------------------
 
---------------------------------------------------------------------------------
--- Public: Stat Line Builder
---------------------------------------------------------------------------------
 -- From: https://warcraft.wiki.gg/wiki/SpecializationID
 local SPEC_PRIMARY_STAT = {
   -- Warrior
-  [71] = "Strength", -- Arms
-  [72] = "Strength", -- Fury
-  [73] = "Strength", -- Protection
-
+  [71] = "Strength", [72] = "Strength", [73] = "Strength",
   -- Paladin
-  [65] = "Intellect", -- Holy
-  [66] = "Strength",  -- Protection
-  [70] = "Strength",  -- Retribution
-
+  [65] = "Intellect", [66] = "Strength", [70] = "Strength",
   -- Hunter
-  [253] = "Agility", -- Beast Mastery
-  [254] = "Agility", -- Marksmanship
-  [255] = "Agility", -- Survival
-
+  [253] = "Agility", [254] = "Agility", [255] = "Agility",
   -- Rogue
-  [259] = "Agility", -- Assassination
-  [260] = "Agility", -- Outlaw
-  [261] = "Agility", -- Subtlety
-
+  [259] = "Agility", [260] = "Agility", [261] = "Agility",
   -- Priest
-  [256] = "Intellect", -- Discipline
-  [257] = "Intellect", -- Holy
-  [258] = "Intellect", -- Shadow
-
-  -- DK
-  [250] = "Strength", -- Blood
-  [251] = "Strength", -- Frost
-  [252] = "Strength", -- Unholy
-
+  [256] = "Intellect", [257] = "Intellect", [258] = "Intellect",
+  -- Death Knight
+  [250] = "Strength", [251] = "Strength", [252] = "Strength",
   -- Shaman
-  [262] = "Intellect", -- Elemental
-  [263] = "Agility",   -- Enhancement
-  [264] = "Intellect", -- Restoration
-
+  [262] = "Intellect", [263] = "Agility", [264] = "Intellect",
   -- Mage
-  [62]  = "Intellect", -- Arcane
-  [63]  = "Intellect", -- Fire
-  [64]  = "Intellect", -- Frost
-
+  [62] = "Intellect", [63] = "Intellect", [64] = "Intellect",
   -- Warlock
-  [265] = "Intellect", -- Affliction
-  [266] = "Intellect", -- Demonology
-  [267] = "Intellect", -- Destruction
-
+  [265] = "Intellect", [266] = "Intellect", [267] = "Intellect",
   -- Monk
-  [268] = "Agility",   -- Brewmaster
-  [269] = "Agility",   -- Windwalker
-  [270] = "Intellect", -- Mistweaver
-
+  [268] = "Agility", [269] = "Agility", [270] = "Intellect",
   -- Druid
-  [102] = "Intellect", -- Balance
-  [103] = "Agility",   -- Feral
-  [104] = "Agility",   -- Guardian
-  [105] = "Intellect", -- Restoration
-
+  [102] = "Intellect", [103] = "Agility", [104] = "Agility", [105] = "Intellect",
   -- Demon Hunter
-  [577] = "Agility", -- Havoc
-  [581] = "Agility", -- Vengeance
-
+  [577] = "Agility", [581] = "Agility",
   -- Evoker
-  [1467] = "Intellect", -- Devastation
-  [1468] = "Intellect", -- Preservation
-  [1473] = "Intellect", -- Augmentation
+  [1467] = "Intellect", [1468] = "Intellect", [1473] = "Intellect",
 }
 
+---Get the localized primary stat name for a unit.
+---@param unit string
+---@return string
 local function GetPrimaryStatName(unit)
-  if not UnitIsPlayer(unit) then return nil end
+  if not UnitIsPlayer(unit) then return "Primary Stat" end
 
   if UnitIsUnit(unit, "player") then
     local specIndex = GetSpecialization()
     if specIndex then
       local specID = GetSpecializationInfo(specIndex)
-      return SPEC_PRIMARY_STAT[specID]
+      return SPEC_PRIMARY_STAT[specID] or "Primary Stat"
     end
   else
     local specID = GetInspectSpecialization(unit)
     if specID and specID > 0 then
-      return SPEC_PRIMARY_STAT[specID]
+      return SPEC_PRIMARY_STAT[specID] or "Primary Stat"
     end
   end
 
   return "Primary Stat"
 end
 
+--------------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------------
+
 ---Build normalized stat lines from an aura.
----@param aura table Aura data
----@param unit table Unit the aura was applied to
+---@param aura table Aura data (from C_UnitAuras)
+---@param unit string Unit token the aura was applied to
 ---@return string[] lines List of formatted stat lines
 function StatsTracker:GetStatLines(aura, unit)
     local lines = {}
-    if not aura then
+    if not aura or not aura.points then
         return lines
     end
 
     local function addLine(value, suffix, isPercent)
-        local prefix = "+" .. FormatWithCommas(value)
+        local prefix = "+" .. Addon.FormatWithCommas(value)
         if isPercent then
             table.insert(lines, prefix .. "% " .. suffix)
         else

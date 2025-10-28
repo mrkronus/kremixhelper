@@ -1,4 +1,4 @@
---[[-------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------
   AutoScrapper.lua
   Purpose:
     - Core scrapping logic
@@ -6,7 +6,7 @@
     - Auto-fill via FillNextBatch(), called by UI/events
   Notes:
     - Never calls ScrapItems() (protected). Piggybacks on player Scrap clicks.
----------------------------------------------------------------------------]]
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
 
@@ -15,7 +15,6 @@ local kprint = Addon.Settings.kprint
 ---@class AutoScrapper
 local AutoScrapper = {}
 Addon.AutoScrapper = AutoScrapper
-
 
 --------------------------------------------------------------------------------
 -- Settings (fallback defaults)
@@ -27,18 +26,18 @@ AutoScrapper.settings = {
     maxQuality        = Enum.ItemQuality.Rare,
 }
 
-
 --------------------------------------------------------------------------------
 -- Constants
 --------------------------------------------------------------------------------
 
 local SCRAPPING_MACHINE_SLOTS = 9
 
-
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
 
+---Get the active AceDB profile or fallback defaults.
+---@return table profile
 local function GetProfile()
     local ace = Addon.LibAceAddon
     if ace and ace.db and ace.db.profile then
@@ -47,6 +46,7 @@ local function GetProfile()
     return AutoScrapper.settings
 end
 
+-- Mapping of inventory types to slot IDs
 local INVTYPE_TO_SLOTS = {
     [Enum.InventoryType.IndexHeadType]            = { INVSLOT_HEAD },
     [Enum.InventoryType.IndexNeckType]            = { INVSLOT_NECK },
@@ -75,12 +75,19 @@ local INVTYPE_TO_SLOTS = {
     [Enum.InventoryType.IndexRelicType]           = { INVSLOT_MAINHAND },
 }
 
+---Get item level from a link.
+---@param link string|nil
+---@return number ilvl
 local function GetLinkItemLevel(link)
     if not link then return 0 end
     local ilvl = C_Item.GetDetailedItemLevelInfo(link)
     return ilvl or 0
 end
 
+---Check if a candidate item is higher ilvl than equipped.
+---@param invType number
+---@param candidateIlvl number
+---@return boolean
 local function IsHigherThanEquipped(invType, candidateIlvl)
     if not invType or candidateIlvl <= 0 then
         return false
@@ -99,11 +106,13 @@ local function IsHigherThanEquipped(invType, candidateIlvl)
     return false
 end
 
-
 --------------------------------------------------------------------------------
 -- Filtering
 --------------------------------------------------------------------------------
 
+---Check if an item is eligible for scrapping.
+---@param itemInfo table
+---@return boolean
 function AutoScrapper:IsEligible(itemInfo)
     local profile = GetProfile()
     local maxQ = profile.maxQuality or Enum.ItemQuality.Rare
@@ -124,11 +133,12 @@ function AutoScrapper:IsEligible(itemInfo)
     return true
 end
 
-
 --------------------------------------------------------------------------------
 -- Scrappable items
 --------------------------------------------------------------------------------
 
+---Scan bags for scrappable items.
+---@return table[] items
 function AutoScrapper:GetScrappableItems()
     local items = {}
     local profile = GetProfile()
@@ -173,11 +183,14 @@ function AutoScrapper:GetScrappableItems()
     return items
 end
 
-
 --------------------------------------------------------------------------------
 -- Scrapping actions
 --------------------------------------------------------------------------------
 
+---Attempt to place an item into the scrapper.
+---@param bag number
+---@param slot number
+---@return boolean success
 function AutoScrapper:ScrapItemFromBag(bag, slot)
     kprint("Attempting to scrap bag", bag, "slot", slot)
 
@@ -211,8 +224,10 @@ function AutoScrapper:ScrapItemFromBag(bag, slot)
     return false
 end
 
+---Find the first free scrapper slot.
+---@return number|nil index
 local function GetFreeScrapperSlot()
-    for i = 1, 9 do
+    for i = 1, SCRAPPING_MACHINE_SLOTS do
         if not C_ScrappingMachineUI.GetCurrentPendingScrapItemLocationByIndex(i - 1) then
             return i
         end
@@ -220,6 +235,7 @@ local function GetFreeScrapperSlot()
     return nil
 end
 
+---Fill the scrapper with the next batch of eligible items.
 function AutoScrapper:FillNextBatch()
     if self._filling then return end
     self._filling = true
@@ -248,9 +264,9 @@ function AutoScrapper:FillNextBatch()
     self._filling = false
 end
 
-
 --------------------------------------------------------------------------------
 -- Export
 --------------------------------------------------------------------------------
 
 Addon.AutoScrapper = AutoScrapper
+

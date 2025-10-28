@@ -1,10 +1,13 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   UnitTooltip.lua
   Purpose:
     - Hook into Blizzard unit tooltips
     - Display Threads totals + today (from ThreadsTracker)
     - Display stat breakdown (from StatsTracker)
-============================================================================]]--
+  Notes:
+    - Only applies in Legion Timerunner mode
+    - Adds stat lines, Threads total, and Limits Unbound bonus
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
 
@@ -13,7 +16,6 @@ local colorize = Addon.Colorize
 local Threads  = Addon.ThreadsTracker
 local Stats    = Addon.StatsTracker
 
-
 --------------------------------------------------------------------------------
 -- Tooltip Hook
 --------------------------------------------------------------------------------
@@ -21,7 +23,7 @@ local Stats    = Addon.StatsTracker
 ---Post-process unit tooltips to inject Threads and Stats information.
 ---@param tooltip GameTooltip
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
-    if not IsInLegionTimerunnerMode() then return end
+    if not Addon.IsInLegionTimerunnerMode() then return end
 
     local _, unit = tooltip:GetUnit()
     if not (unit and UnitIsPlayer(unit)) then
@@ -30,7 +32,7 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
 
     -- Threads total
     local total = Threads:GetUnitTotal(unit)
-    if not total then
+    if not total or total <= 0 then
         return
     end
 
@@ -48,10 +50,11 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tool
     tooltip:AddLine(" ")
 
     -- Threads info line
-    tooltip:AddLine(colorize(FormatWithCommasToThousands(total) .. " Threads", colors.WowToken))
+    tooltip:AddLine(colorize(Addon.FormatWithCommasToThousands(total) .. " Threads", colors.WowToken))
+
     local verseBonus = Threads:GetUnitVersatilityBonus(unit)
-    if verseBonus then
-        tooltip:AddLine(colorize(Threads:GetUnitVersatilityBonus(unit) .. " Limits Unbound", colors.Artifact))
+    if verseBonus and verseBonus > 0 then
+        tooltip:AddLine(colorize(verseBonus .. " Limits Unbound", colors.Artifact))
     end
 
     tooltip:AddLine(" ")

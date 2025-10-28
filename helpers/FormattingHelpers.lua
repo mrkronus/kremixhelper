@@ -1,27 +1,33 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   NumberFormatting.lua
   Purpose:
     - Format numbers with commas
     - Format numbers with K/M suffixes and commas
-    - Wrap text in WoW color codes
-============================================================================]]--
+    - Provide helpers for Timerunning season checks
+  Notes:
+    - All functions and constants are namespaced under Addon
+    - Defensive defaults ensure safe fallbacks
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
-
 
 --------------------------------------------------------------------------------
 -- Time Running
 --------------------------------------------------------------------------------
 
-local TIMERUNNING_MOP = 1
-local TIMERUNNING_LEGION = 2
+Addon.TIMERUNNING_MOP    = 1
+Addon.TIMERUNNING_LEGION = 2
 
-function IsInTimerunnerMode()
-	return PlayerGetTimerunningSeasonID and PlayerGetTimerunningSeasonID() ~= 0
+---Check if the player is in any Timerunner mode.
+---@return boolean
+function Addon.IsInTimerunnerMode()
+    return PlayerGetTimerunningSeasonID and PlayerGetTimerunningSeasonID() ~= 0
 end
 
-function IsInLegionTimerunnerMode()
-	return PlayerGetTimerunningSeasonID and PlayerGetTimerunningSeasonID() == TIMERUNNING_LEGION
+---Check if the player is in Legion Timerunner mode.
+---@return boolean
+function Addon.IsInLegionTimerunnerMode()
+    return PlayerGetTimerunningSeasonID and PlayerGetTimerunningSeasonID() == Addon.TIMERUNNING_LEGION
 end
 
 --------------------------------------------------------------------------------
@@ -31,7 +37,7 @@ end
 ---Format a number with commas as thousands separators.
 ---@param num number
 ---@return string
-function FormatWithCommas(num)
+function Addon.FormatWithCommas(num)
     local s = tostring(math.floor(num or 0))
 
     -- Repeatedly insert commas every three digits from the right
@@ -44,7 +50,6 @@ function FormatWithCommas(num)
     return s
 end
 
-
 --------------------------------------------------------------------------------
 -- Thousands / Millions Formatting
 --------------------------------------------------------------------------------
@@ -52,7 +57,7 @@ end
 ---Format a number with K/M rounding and commas.
 ---@param num number
 ---@return string
-function FormatWithCommasToThousands(num)
+function Addon.FormatWithCommasToThousands(num)
     if not num then
         return "0"
     end
@@ -82,4 +87,3 @@ function FormatWithCommasToThousands(num)
         return formatted
     end
 end
-

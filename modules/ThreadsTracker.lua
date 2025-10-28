@@ -1,4 +1,4 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   ThreadsTracker.lua
   Purpose:
     - Track Threads totals from Infinite Power aura (Legion Remix)
@@ -6,16 +6,20 @@
     - Maintain last 7 days of history per character
     - Persist all characters in AceDB global scope for cross-alt comparisons
     - Store class info for UI colorization
-============================================================================]]--
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
+
+--------------------------------------------------------------------------------
+-- Module
+--------------------------------------------------------------------------------
 
 ---@class ThreadsTracker
 local ThreadsTracker = {}
 Addon.ThreadsTracker = ThreadsTracker
 
 -- Spell ID for Infinite Power aura
-local THREADS_SPELL_ID = 1232454
+ThreadsTracker.THREADS_SPELL_ID = 1232454
 
 --------------------------------------------------------------------------------
 -- Internal: Aura Scanning
@@ -29,7 +33,7 @@ local function ScanAura(unit)
     while true do
         local aura = C_UnitAuras.GetAuraDataByIndex(unit, index)
         if not aura then return nil end
-        if aura.spellId == THREADS_SPELL_ID then
+        if aura.spellId == ThreadsTracker.THREADS_SPELL_ID then
             return aura
         end
         index = index + 1
@@ -41,6 +45,8 @@ end
 --------------------------------------------------------------------------------
 
 ---Get total Threads for a unit (skips XP at index 11).
+---@param unit string
+---@return number total
 function ThreadsTracker:GetUnitTotal(unit)
     local aura = ScanAura(unit)
     if not aura or not aura.points then return 0 end
@@ -55,6 +61,8 @@ function ThreadsTracker:GetUnitTotal(unit)
 end
 
 ---Get Versatility bonus (index 5).
+---@param unit string
+---@return number|nil
 function ThreadsTracker:GetUnitVersatilityBonus(unit)
     local aura = ScanAura(unit)
     if not aura or not aura.points then return nil end
@@ -66,11 +74,13 @@ end
 --------------------------------------------------------------------------------
 
 ---Get unique character key (Name-Realm).
+---@return string
 local function GetCharKey()
     return UnitName("player") .. "-" .. GetRealmName()
 end
 
 ---Get the global threads DB, ensuring structure exists.
+---@return table
 local function GetGlobalDB()
     if not Addon.LibAceAddon or not Addon.LibAceAddon.db or not Addon.LibAceAddon.db.global then
         return { chars = {} } -- safe fallback
@@ -82,9 +92,8 @@ local function GetGlobalDB()
     return db.threads
 end
 
-
 ---Ensure a character entry exists in the global DB.
----Adds history, baselineTotal, and class fields if missing.
+---@return table entry
 local function EnsureCharEntry()
     local g = GetGlobalDB()
     local key = GetCharKey()
@@ -95,6 +104,7 @@ local function EnsureCharEntry()
 end
 
 ---Get a string key for the current daily reset (YYYYMMDD).
+---@return string
 local function GetResetKey()
     local now = time()
     local resetIn = C_DateAndTime.GetSecondsUntilDailyReset()
@@ -103,7 +113,7 @@ local function GetResetKey()
 end
 
 ---Check if the stored day has rolled over and reset if needed.
----If rollover, insert a new history entry and trim to 7 days.
+---@param entry table
 local function CheckDayRollover(entry)
     local todayKey = GetResetKey()
     if not entry.history[1] or entry.history[1].day ~= todayKey then

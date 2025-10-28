@@ -1,20 +1,27 @@
---[[-------------------------------------------------------------------------
-GroupMonitor.lua
-Purpose:
-  - Maintain a live database of current group members (1–40)
-  - Single public API: ThreadsMonitor:GetGroupData()
-  - Stable schema with explicit fields for tooltip rendering
----------------------------------------------------------------------------]]
+--[[-----------------------------------------------------------------------------
+  GroupMonitor.lua
+  Purpose:
+    - Maintain a live database of current group members (1–40)
+    - Provide a single public API: GroupMonitor:GetGroupData()
+    - Stable schema with explicit fields for tooltip rendering
+  Notes:
+    - Distinct from ThreadsTracker (aura scanning + persistence)
+    - This module focuses on group roster snapshots
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
 local ThreadsTracker = Addon.ThreadsTracker
 
----@class ThreadsMonitor
-local ThreadsMonitor = {}
-Addon.ThreadsMonitor = ThreadsMonitor
+--------------------------------------------------------------------------------
+-- Module
+--------------------------------------------------------------------------------
+
+---@class GroupMonitor
+local GroupMonitor = {}
+Addon.GroupMonitor = GroupMonitor
 
 -- Internal database
-ThreadsMonitor.db = {
+GroupMonitor.db = {
   group = {}, -- unified list of members
 }
 
@@ -33,18 +40,24 @@ local ROLE_ICONS = {
   DAMAGER = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:22:41|t",
 }
 
----Return icon texture string for a role
-function ThreadsMonitor:GetRoleIcon(role)
+---Return icon texture string for a role.
+---@param role string
+---@return string
+function GroupMonitor:GetRoleIcon(role)
   return ROLE_ICONS[role] or ""
 end
 
----Return icon texture ID for a spell
-function ThreadsMonitor:GetSpellIcon(spellID)
+---Return icon texture ID for a spell.
+---@param spellID number
+---@return number
+function GroupMonitor:GetSpellIcon(spellID)
   return (spellID and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellID)) or 134400
 end
 
----Return class color string (hex) for a unit
-function ThreadsMonitor:GetClassColor(unit)
+---Return class color string (hex) for a unit.
+---@param unit string
+---@return string
+function GroupMonitor:GetClassColor(unit)
   local _, classFile = UnitClass(unit)
   local color = RAID_CLASS_COLORS[classFile] or NORMAL_FONT_COLOR
   return color.colorStr
@@ -54,6 +67,9 @@ end
 -- Member Builder
 --------------------------------------------------------------------------------
 
+---Build a member record for the given unit.
+---@param unit string
+---@return table member
 local function BuildMember(unit)
   if not UnitExists(unit) then
     return {
@@ -89,7 +105,8 @@ end
 -- Core Update
 --------------------------------------------------------------------------------
 
-function ThreadsMonitor:UpdateGroup()
+---Update the internal group database.
+function GroupMonitor:UpdateGroup()
   wipe(self.db.group)
 
   if IsInRaid() then
@@ -110,9 +127,9 @@ end
 -- Public API
 --------------------------------------------------------------------------------
 
----Return a fresh snapshot of the current group (1–40 members)
+---Return a fresh snapshot of the current group (1–40 members).
 ---@return table[] members
-function ThreadsMonitor:GetGroupData()
+function GroupMonitor:GetGroupData()
   self:UpdateGroup()
   return self.db.group
 end
@@ -128,5 +145,5 @@ f:RegisterEvent("UNIT_LEVEL")
 f:RegisterEvent("UNIT_NAME_UPDATE")
 
 f:SetScript("OnEvent", function()
-  ThreadsMonitor:UpdateGroup()
+  GroupMonitor:UpdateGroup()
 end)

@@ -1,14 +1,13 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   ArtifactWeapon.lua
   Purpose:
     - Provide accessors for artifact weapon metrics
     - Support querying average weapon item level
     - Support querying increased trait spells and their ranks
-
   Notes:
     - Uses C_Item and C_Traits APIs
     - Defensive coding: always checks for nils and empty lists
-============================================================================]]--
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
 
@@ -22,7 +21,7 @@ local ModifiableArtifactTraits = {
     { 108110, 133493, 138279 }, -- Highmountain Fortitude
     { 108702, 134248, 139024 }, -- Touch of Malice
     { 108105, 133488, 138274 }, -- I Am My Scars!
-    { 108132, 133525, 138311 }, -- Call of the Legion ??
+    { 108132, 133525, 138311 }, -- Call of the Legion
     { 108102, 133485, 138271 }, -- Volatile Magics
     { 108103, 133486, 138272 }, -- Arcane Aegis
     { 108103, 133508, 138294 }, -- Arcane Ward
@@ -56,6 +55,7 @@ end
 -- Module
 --------------------------------------------------------------------------------
 
+---@class ArtifactWeapon
 local ArtifactWeapon = {}
 
 ---Get the average item level of the equipped artifact weapon.
@@ -80,7 +80,7 @@ end
 
 ---Get all increased trait spells and their total ranks.
 ---Iterates over ModifiableArtifactTraits and returns only those with >0 increase.
----@return table|nil list { { spellID, totalIncreased }, ... }
+---@return table[]|nil list { { spellID:number, totalIncreased:number }, ... }
 function ArtifactWeapon:GetIncreasedTraitSpellsAndRanks()
     local results = {}
     for _, value in ipairs(ModifiableArtifactTraits) do
@@ -102,12 +102,12 @@ end
 
 ---Returns a list of currently equipped Artifact weapons with metadata.
 ---Deduplicates identical weapons across slots.
----@return table[] List of weapon tables with fields:
----  icon: string — Texture path for the weapon icon.
----  text: string — Localized item name.
----  itemID: number — Numeric item ID.
----  link: string — Full item link string.
----  slot: number — Inventory slot used (16, 17, or 18).
+---@return table[] weapons List of weapon tables with fields:
+---  icon: number|nil — Texture ID for the weapon icon
+---  text: string — Localized item name
+---  itemID: number — Numeric item ID
+---  link: string — Full item link string
+---  slot: number — Inventory slot used (16, 17, or 18)
 function ArtifactWeapon:GetEquippedArtifactWeapons()
     local slots = {16, 17, 18} -- Main hand, Off-hand, Ranged
     local seen = {}
@@ -121,11 +121,11 @@ function ArtifactWeapon:GetEquippedArtifactWeapons()
             if itemName and itemID and not seen[itemID] then
                 seen[itemID] = true
                 table.insert(weapons, {
-                    icon = icon or texture or 134400, -- fallback question mark
-                    text = itemName or "Unknown",
+                    icon   = icon or texture or 134400, -- fallback question mark
+                    text   = itemName or "Unknown",
                     itemID = itemID,
-                    link = link,
-                    slot = slot,
+                    link   = link,
+                    slot   = slot,
                 })
             end
         end
@@ -133,7 +133,6 @@ function ArtifactWeapon:GetEquippedArtifactWeapons()
 
     return weapons
 end
-
 
 --------------------------------------------------------------------------------
 -- Export

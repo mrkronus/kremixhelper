@@ -1,14 +1,28 @@
---[[-------------------------------------------------------------------------
-TooltipHelpers.lua
----------------------------------------------------------------------------]]
+--[[-----------------------------------------------------------------------------
+  TooltipHelpers.lua
+  Purpose:
+    - Provide helper functions for building LibQTip-based tooltips
+    - Add section headings, sub-tooltips, and currency lines
+    - Provide formatting helpers for Infinite Power and Limits Unbound
+  Notes:
+    - All functions are namespaced under Addon.TooltipHelpers
+    - Defensive coding ensures safe fallbacks
+-------------------------------------------------------------------------------]]--
 
-local _, KRemixHelper            = ...
+local _, Addon = ...
 
-local Fonts                      = KRemixHelper.Fonts
-local Colors                     = KRemixHelper.Colors
-local colorize                   = KRemixHelper.Colorize
+local Fonts    = Addon.Fonts
+local Colors   = Addon.Colors
+local colorize = Addon.Colorize
+local LibQTip  = Addon.LibQTip
 
-local LibQTip                    = KRemixHelper.LibQTip
+--------------------------------------------------------------------------------
+-- Module
+--------------------------------------------------------------------------------
+
+---@class TooltipHelpers
+local TooltipHelpers = {}
+Addon.TooltipHelpers = TooltipHelpers
 
 -- Constants
 local LIMITS_UNBOUND_SPELL_ID    = 1245947
@@ -17,14 +31,14 @@ local COST_TO_UNLOCK_TREE        = 114125
 local COST_PER_RANK              = 50000
 local INV_MISC_QUESTIONMARK      = 134400
 
-
 --------------------------------------------------------------------------------
 -- Content Helpers
 --------------------------------------------------------------------------------
 
 ---Add a section heading with separators and font changes.
+---@param tooltip table
 ---@param sectionName string
-function AddSectionHeading(tooltip, sectionName)
+function TooltipHelpers.AddSectionHeading(tooltip, sectionName)
     tooltip:AddSeparator(10, 0, 0, 0, 0)
     tooltip:SetFont(Fonts.Heading)
     local currentLine = tooltip:AddLine()
@@ -34,60 +48,58 @@ function AddSectionHeading(tooltip, sectionName)
     tooltip:SetFont(Fonts.MainText)
 end
 
+---Attach a tooltip script to a line.
 ---@param tooltip table
+---@param lineIndex number
 ---@param onEnter fun(cell: Frame)
-function AddTooltipToLine(tooltip, lineIndex, onEnter)
+function TooltipHelpers.AddTooltipToLine(tooltip, lineIndex, onEnter)
     tooltip:SetLineScript(lineIndex, "OnEnter", onEnter)
     tooltip:SetLineScript(lineIndex, "OnLeave", function() GameTooltip:Hide() end)
 end
 
-function AddSubTooltipLine(tooltip, label, populateFunc)
+---Add a sub-tooltip line that spawns another tooltip on hover.
+---@param tooltip table
+---@param label string
+---@param populateFunc fun(subTip: table)
+function TooltipHelpers.AddSubTooltipLine(tooltip, label, populateFunc)
     local line = tooltip:AddLine()
     tooltip:SetCell(line, 1, label, nil, "LEFT")
     tooltip:SetCell(line, tooltip:GetColumnCount(), " >", nil, "RIGHT")
 
     tooltip:SetLineScript(line, "OnEnter", function(cell)
-        -- Acquire a new tooltip
-        local subTip = LibQTip:Acquire("KRemixHelperSubTooltip", 1, "LEFT")
+        local subTip = LibQTip:Acquire("AddonSubTooltip", 1, "LEFT")
         subTip:Clear()
 
-        -- Decide which side of the screen we’re on
         local x = cell:GetCenter()
         local screenWidth = UIParent:GetWidth()
 
         if x < screenWidth / 2 then
-            -- Anchor to the right of the cell
             subTip:SetPoint("LEFT", cell, "TOPRIGHT", 0, 0)
         else
-            -- Anchor to the left of the cell
             subTip:SetPoint("RIGHT", cell, "TOPLEFT", 0, 0)
         end
 
         subTip:SetAutoHideDelay(1, UIParent)
-
-        -- Populate with the requested view
         populateFunc(subTip)
-
         subTip:Show()
     end)
 
     tooltip:SetLineScript(line, "OnLeave", function()
-        -- LibQTip handles auto‑hide, but you can force release if needed:
-        LibQTip:Release(LibQTip:Acquire("KRemixHelperSubTooltip"))
+        LibQTip:Release(LibQTip:Acquire("AddonSubTooltip"))
     end)
 end
 
 ---Add a currency line to the tooltip if the player has any of it.
 ---@param tooltip table
 ---@param currencyID number
-function AddCurrencyLine(tooltip, currencyID)
-    local name, quantity, icon = KRemixHelper.Currency:Get(currencyID)
+function TooltipHelpers.AddCurrencyLine(tooltip, currencyID)
+    local name, quantity, icon = Addon.Currency:Get(currencyID)
     if quantity and quantity > 0 then
         local iconString = icon and ("|T%d:0|t"):format(icon) or ""
         local line = tooltip:AddLine()
         tooltip:SetCell(line, 1, name)
-        tooltip:SetCell(line, 2, FormatWithCommas(quantity) .. " " .. iconString)
-        AddTooltipToLine(tooltip, line, function(cell)
+        tooltip:SetCell(line, 2, Addon.FormatWithCommas(quantity) .. " " .. iconString)
+        TooltipHelpers.AddTooltipToLine(tooltip, line, function(cell)
             GameTooltip:SetOwner(cell, "ANCHOR_RIGHT")
             GameTooltip:SetCurrencyByID(currencyID)
             GameTooltip:Show()
@@ -95,29 +107,31 @@ function AddCurrencyLine(tooltip, currencyID)
     end
 end
 
-
 --------------------------------------------------------------------------------
 -- Formatting Helpers
 --------------------------------------------------------------------------------
 
--- Function to get current Infinite Power
-function GetInfinitePowerQty()
+---Get current Infinite Power quantity.
+---@return number
+function TooltipHelpers.GetInfinitePowerQty()
     if not C_CurrencyInfo or not C_CurrencyInfo.GetCurrencyInfo then return 0 end
     local ci = C_CurrencyInfo.GetCurrencyInfo(INFINITE_POWER_CURRENCY_ID)
     return (ci and ci.quantity) or 0
 end
 
--- Function to get a spell icon
-function GetSpellIcon(spellID)
+---Get a spell icon texture ID.
+---@param spellID number
+---@return number
+function TooltipHelpers.GetSpellIcon(spellID)
     if not spellID or not C_Spell.GetSpellTexture then return INV_MISC_QUESTIONMARK end
     return C_Spell.GetSpellTexture(spellID) or INV_MISC_QUESTIONMARK
 end
 
--- Function to calculate Limits Unbound rank and format string
-function GetLimitsUnboundRankString()
-    local ipQty = GetInfinitePowerQty()
+---Calculate Limits Unbound rank and return as string.
+---@return string
+function TooltipHelpers.GetLimitsUnboundRankString()
+    local ipQty = TooltipHelpers.GetInfinitePowerQty()
     local available = math.max(0, ipQty - COST_TO_UNLOCK_TREE)
     local rank = math.floor(available / COST_PER_RANK)
-    local icon = ("|T%d:0|t"):format(GetSpellIcon(LIMITS_UNBOUND_SPELL_ID)) or ""
     return tostring(rank)
 end

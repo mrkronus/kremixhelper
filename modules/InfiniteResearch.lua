@@ -1,27 +1,40 @@
---[[-------------------------------------------------------------------------
-InfiniteResearch.lua
-Purpose:
-  Provides a class-style API to retrieve all active quests containing
-  "Infinite Research" in the title. Intended for use with LibQTip tooltips
-  and chat output.
+--[[-----------------------------------------------------------------------------
+  InfiniteResearch.lua
+  Purpose:
+    - Provide a class-style API to retrieve all active quests containing
+      "Infinite Research" in the title
+    - Intended for use with LibQTip tooltips and chat output
+  Notes:
+    - Returns full quest metadata needed for hoverable links
+    - Uses defensive checks and scoped blocks
+    - Quest links open the quest log on click
+    - To keep data fresh, consumers should listen for QUEST_LOG_UPDATE
+-------------------------------------------------------------------------------]]--
 
-Notes:
-  - Returns full quest metadata needed for hoverable links
-  - Uses defensive checks and scoped blocks
-  - Includes a slash command to print matching quests
-  - Quest links open the quest log on click
-  - To keep data fresh, consumers should listen for QUEST_LOG_UPDATE
----------------------------------------------------------------------------]]
-
-local _, KRemixHelper = ...
-
+local _, Addon = ...
 
 --------------------------------------------------------------------------------
--- InfiniteResearch
+-- Module
 --------------------------------------------------------------------------------
 
+---@class InfiniteResearch
 local InfiniteResearch = {}
 
+---Get all active quests containing "Infinite Research" in the title.
+---@return table[] results List of quest tables with fields:
+---  questID: number
+---  title: string
+---  link: string
+---  isHeader: boolean
+---  isTask: boolean
+---  isBounty: boolean
+---  campaignID: number|nil
+---  frequency: number|nil
+---  level: number|nil
+---  suggestedGroup: number|nil
+---  isOnMap: boolean
+---  isHidden: boolean
+---  isAutoComplete: boolean
 function InfiniteResearch:GetInfiniteResearchQuests()
   local results = {}
   local searchTerm = "infinite research"
@@ -34,18 +47,18 @@ function InfiniteResearch:GetInfiniteResearchQuests()
       local link = format("|cff00ff00|Hquest:%d:%d|h[%s]|h|r", questID, questID, title)
 
       table.insert(results, {
-        questID = questID,
-        title = title,
-        link = link,
-        isHeader = info.isHeader,
-        isTask = info.isTask,
-        isBounty = info.isBounty,
-        campaignID = info.campaignID,
-        frequency = info.frequency,
-        level = info.level,
+        questID        = questID,
+        title          = title,
+        link           = link,
+        isHeader       = info.isHeader,
+        isTask         = info.isTask,
+        isBounty       = info.isBounty,
+        campaignID     = info.campaignID,
+        frequency      = info.frequency,
+        level          = info.level,
         suggestedGroup = info.suggestedGroup,
-        isOnMap = info.isOnMap,
-        isHidden = info.isHidden,
+        isOnMap        = info.isOnMap,
+        isHidden       = info.isHidden,
         isAutoComplete = info.isAutoComplete,
       })
     end
@@ -54,11 +67,11 @@ function InfiniteResearch:GetInfiniteResearchQuests()
   return results
 end
 
-
 --------------------------------------------------------------------------------
 -- Eventing
 --------------------------------------------------------------------------------
 
+-- Hook quest links so clicking them opens the quest log
 hooksecurefunc("SetItemRef", function(link, text, button, chatFrame)
   local questID = link:match("^quest:(%d+):%d+")
   if questID then
@@ -66,9 +79,8 @@ hooksecurefunc("SetItemRef", function(link, text, button, chatFrame)
   end
 end)
 
-
 --------------------------------------------------------------------------------
 -- Export
 --------------------------------------------------------------------------------
 
-KRemixHelper.InfiniteResearch = InfiniteResearch
+Addon.InfiniteResearch = InfiniteResearch

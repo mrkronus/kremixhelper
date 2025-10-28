@@ -1,6 +1,12 @@
---[[============================================================================
+--[[-----------------------------------------------------------------------------
   PlayerIdentity.lua
-============================================================================]]--
+  Purpose:
+    - Provide a snapshot of the player's current identity and stats
+    - Expose class, race, spec, ilvl, and faction in a normalized schema
+  Notes:
+    - All values are returned in a single table
+    - Defensive defaults ensure safe fallbacks
+-------------------------------------------------------------------------------]]--
 
 local _, Addon = ...
 
@@ -8,9 +14,23 @@ local _, Addon = ...
 -- Module
 --------------------------------------------------------------------------------
 
+---@class PlayerIdentity
 local PlayerIdentity = {}
 
--- Returns a snapshot of the player's current identity and stats
+---Get a snapshot of the player's current identity and stats.
+---@return table identity {
+---   name: string,
+---   realm: string,
+---   guid: string,
+---   classToken: string,
+---   classLocalized: string,
+---   specLocalized: string,
+---   raceToken: string,
+---   raceLocalized: string,
+---   level: number,
+---   ilvl: number,
+---   faction: string
+---}
 function PlayerIdentity:Get()
     local unit = "player"
     local name, realm   = UnitName(unit)
@@ -19,9 +39,10 @@ function PlayerIdentity:Get()
     local level         = UnitLevel(unit)
     local faction       = UnitFactionGroup(unit)
     local guid          = UnitGUID(unit)
-    local avgIlvl       = select(1, GetAverageItemLevel())
+    local avgIlvl       = select(1, GetAverageItemLevel()) or 0
     local specID        = GetSpecialization()
     local specName      = ""
+
     if specID and specID > 0 then
         _, specName = GetSpecializationInfo(specID)
     end
@@ -35,8 +56,8 @@ function PlayerIdentity:Get()
         specLocalized  = specName,
         raceToken      = raceToken,
         raceLocalized  = raceLocalized,
-        level          = level,
-        ilvl           = math.floor((avgIlvl or 0) + 0.5),
+        level          = level or 0,
+        ilvl           = math.floor(avgIlvl + 0.5),
         faction        = faction,
     }
 end
