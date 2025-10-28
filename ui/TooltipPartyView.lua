@@ -14,7 +14,9 @@ local _, KRemixHelper = ...
 
 local Fonts   = KRemixHelper.Fonts
 local Colors  = KRemixHelper.Colors
+
 local Monitor = KRemixHelper.ThreadsMonitor
+
 
 --------------------------------------------------------------------------------
 -- Sort State
@@ -59,7 +61,7 @@ local function BuildRoleSummary(counts)
     )
 end
 
-local function AddSectionHeading(tooltip, sectionName)
+local function AddPartyViewHeading(tooltip)
     tooltip:SetFont(Fonts.Heading)
     local line = tooltip:AddLine()
 
@@ -67,7 +69,7 @@ local function AddSectionHeading(tooltip, sectionName)
     local summary = BuildRoleSummary(counts)
 
     -- Section name left-aligned
-    tooltip:SetCell(line, 1, colorize(sectionName, Colors.Header), Fonts.Heading, "LEFT", tooltip:GetColumnCount()-2)
+    tooltip:SetCell(line, 1, colorize("Group Info", Colors.Header), Fonts.Heading, "LEFT", tooltip:GetColumnCount()-2)
 
     -- Role summary right-aligned, smaller font, spanning remaining columns
     tooltip:SetCell(line, tooltip:GetColumnCount()-1, summary, Fonts.MainText, "RIGHT", 2)
@@ -193,7 +195,7 @@ function PartyView:Populate(tooltip)
     tooltip:SetColumnLayout(6, "LEFT", "CENTER", "LEFT", "LEFT", "RIGHT", "RIGHT")
 
     if IsInLegionTimerunnerMode() then
-        AddSectionHeading(tooltip, "Group Info")
+        AddPartyViewHeading(tooltip)
         AddPartyRows(tooltip)
     else
         local line = tooltip:AddLine()

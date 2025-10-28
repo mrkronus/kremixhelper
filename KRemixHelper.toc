@@ -25,8 +25,9 @@ ace\AceAddon.lua
 ace\MinimapTooltip.lua
 ace\MinimapIcon.lua
 
-# Data
-data\FormattingHelpers.lua
+# Helpers
+helpers\FormattingHelpers.lua
+helpers\TooltipHelpers.lua
 
 # Modules
 modules\StatsTracker.lua

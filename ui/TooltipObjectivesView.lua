@@ -12,22 +12,9 @@ local _, KRemixHelper = ...
 
 local Fonts   = KRemixHelper.Fonts
 local Colors  = KRemixHelper.Colors
+
 local InfiniteResearch = KRemixHelper.InfiniteResearch
 
---------------------------------------------------------------------------------
--- Helpers
---------------------------------------------------------------------------------
-
----Add a section heading with separators and font changes.
----@param sectionName string
-local function AddSectionHeading(tooltip, sectionName)
-    tooltip:SetFont(Fonts.Heading)
-    local line = tooltip:AddLine()
-    tooltip:SetCell(line, 1, colorize(sectionName, Colors.Header), nil, "LEFT", tooltip:GetColumnCount())
-    tooltip:AddSeparator()
-    tooltip:AddSeparator(3, 0, 0, 0, 0)
-    tooltip:SetFont(Fonts.MainText)
-end
 
 --------------------------------------------------------------------------------
 -- Quest Helpers
@@ -184,6 +171,7 @@ function ObjectivesView:Populate(tooltip)
         tooltip:SetCell(line, 1, colorize("The current character is not a Legion Remix character", Colors.Grey), nil, "LEFT", tooltip:GetColumnCount())
     end
 end
+
 
 --------------------------------------------------------------------------------
 -- Export
