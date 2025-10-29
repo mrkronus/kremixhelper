@@ -78,7 +78,7 @@ function TooltipHelpers.AddSubTooltipLine(tooltip, label, populateFunc)
             subTip:SetPoint("RIGHT", cell, "TOPLEFT", 0, 0)
         end
 
-        subTip:SetAutoHideDelay(1, UIParent)
+        subTip:SetAutoHideDelay(0.1, tooltip)
         populateFunc(subTip)
         subTip:Show()
     end)
