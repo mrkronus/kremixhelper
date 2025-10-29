@@ -17,7 +17,8 @@ local classToColor = Addon.ClassToColor
 local PartyView      = Addon.PartyView
 local ObjectivesView = Addon.ObjectivesView
 
-local INV_MISC_QUESTIONMARK = 134400
+local INV_MISC_QUESTIONMARK     = 134400
+local LIMITS_UNBOUND_SPELL_ID   = 1245947
 
 --------------------------------------------------------------------------------
 -- Section Helpers
@@ -58,7 +59,7 @@ local function AddPlayerIdentitySection(tooltip)
         local currentLine = tooltip:AddLine(threads .. " | " .. unbound)
         Addon.TooltipHelpers.AddTooltipToLine(tooltip, currentLine, function(cell)
             GameTooltip:SetOwner(cell, "ANCHOR_RIGHT")
-            GameTooltip:SetSpellByID(1245947)
+            GameTooltip:SetSpellByID(LIMITS_UNBOUND_SPELL_ID)
             GameTooltip:Show()
         end)
     end

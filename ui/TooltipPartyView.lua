@@ -17,6 +17,7 @@ local Colors        = Addon.Colors
 local colorize      = Addon.Colorize
 
 local GroupMonitor  = Addon.GroupMonitor
+local LIMITS_UNBOUND_SPELL_ID = 1245947
 
 --------------------------------------------------------------------------------
 -- Sort State
@@ -82,7 +83,8 @@ local function FormatThreads(total)
 end
 
 local function FormatLimitsUnbound(rank)
-    local icon = ("|T%d:0|t"):format(GroupMonitor:GetSpellIcon(GroupMonitor.SPELL_ID_LIMITS_UNBOUND))
+    local spellIcon = GroupMonitor:GetSpellIcon(LIMITS_UNBOUND_SPELL_ID)
+    local icon = ("|T%d:0|t"):format(spellIcon)
     return colorize(tostring(rank or 0), Colors.Artifact) .. " " .. icon
 end
 

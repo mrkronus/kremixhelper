@@ -25,7 +25,6 @@ local TooltipHelpers = {}
 Addon.TooltipHelpers = TooltipHelpers
 
 -- Constants
-local LIMITS_UNBOUND_SPELL_ID    = 1245947
 local INFINITE_POWER_CURRENCY_ID = 3268
 local COST_TO_UNLOCK_TREE        = 114125
 local COST_PER_RANK              = 50000
