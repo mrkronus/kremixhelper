@@ -208,6 +208,7 @@ function AutoScrapperFrame:Initialize()
 
     -- Hooks to Blizzard scrapper
     blizzardScrappingFrame:HookScript("OnShow", function()
+        if not IsInLegionTimerunnerMode() then return end
         self.frame:Show()
         self:ReevaluateScrapper()
         if GetAutoFill() then
@@ -227,6 +228,7 @@ end
 ---Refresh the grid of scrappable items.
 function AutoScrapperFrame:Refresh()
     if InCombatLockdown() then return end
+    if not IsInLegionTimerunnerMode() then return end
 
     local items = AutoScrapper:GetScrappableItems(GetMaxQuality(), AutoScrapper.settings.minLevelDiff or 0)
     local perRow, size, pad = GRID_STRIDE, GRID_ICON_SIZE, GRID_GAP
@@ -324,6 +326,8 @@ end
 ---Reevaluate the scrapper contents and auto-fill if enabled.
 function AutoScrapperFrame:ReevaluateScrapper()
     if InCombatLockdown() then return end
+    if not IsInLegionTimerunnerMode() then return end
+
     if self._reevaluating then return end
     self._reevaluating = true
 
