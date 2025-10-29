@@ -1,5 +1,11 @@
 ### Version 11.2.5.3 Beta
 
+- Resolving the issue with the stubborn tooltip
+- Resolving the issue with the Limits Unbound spell icon not always appearing correctly
+
+
+### Version 11.2.5.3 Beta
+
 - Initial public release
 - Added Auto Scrapper panel with one‑click Fill All and optional auto‑fill behavior
 - Added smart unit tooltips showing Threads totals, Infinite Power stat breakdowns, and Limits Unbound ranks
