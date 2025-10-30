@@ -121,7 +121,7 @@ function ObjectivesView:Populate(tooltip)
 	tooltip:EnableMouse(true)
 	tooltip:SetColumnLayout(3, "CENTER", "LEFT", "RIGHT")
 
-	if Addon.IsInLegionTimerunnerMode() then
+	if Addon.IsInLegionTimerunningMode() then
 		local repeatable, nonRepeatable = InfiniteResearch:GetInfiniteResearchQuests()
 		RenderQuestGroup(tooltip, "Repeatable Quests", repeatable, Colors.WowToken, true)
 		RenderQuestGroup(tooltip, "Non-Repeatable Quests", nonRepeatable, Colors.Header, false)

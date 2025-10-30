@@ -231,7 +231,7 @@ function PartyView:Populate(tooltip)
 	tooltip:EnableMouse(true)
 	tooltip:SetColumnLayout(6, "LEFT", "CENTER", "LEFT", "LEFT", "RIGHT", "RIGHT")
 
-	if Addon.IsInLegionTimerunnerMode() then
+	if Addon.IsInLegionTimerunningMode() then
 		AddPartyViewHeading(tooltip)
 		AddPartyRows(tooltip)
 	else

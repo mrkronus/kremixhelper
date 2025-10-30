@@ -223,7 +223,7 @@ function AutoScrapperFrame:Initialize()
 
 	-- Hooks to Blizzard scrapper
 	blizzardScrappingFrame:HookScript("OnShow", function()
-		if not IsInLegionTimerunnerMode() then
+		if not Addon.IsInLegionTimerunningMode() then
 			return
 		end
 		self.frame:Show()
@@ -247,7 +247,7 @@ function AutoScrapperFrame:Refresh()
 	if InCombatLockdown() then
 		return
 	end
-	if not IsInLegionTimerunnerMode() then
+	if not Addon.IsInLegionTimerunningMode() then
 		return
 	end
 
@@ -355,7 +355,7 @@ function AutoScrapperFrame:ReevaluateScrapper()
 	if InCombatLockdown() then
 		return
 	end
-	if not IsInLegionTimerunnerMode() then
+	if not Addon.IsInLegionTimerunningMode() then
 		return
 	end
 	if self._reevaluating then

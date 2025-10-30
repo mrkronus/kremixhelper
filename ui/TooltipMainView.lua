@@ -38,9 +38,7 @@ local function AddPlayerIdentitySection(tooltip)
 	tooltip:SetCell(
 		headerLine,
 		1,
-		Addon.getClassIcon(classToken)
-			.. " "
-			.. colorize(player.name .. " - " .. player.realm, classToColor(classToken))
+		getClassIcon(classToken) .. " " .. colorize(player.name .. " - " .. player.realm, classToColor(classToken))
 	)
 	tooltip:SetCell(headerLine, 2, Addon.FactionIcons[faction])
 
@@ -57,7 +55,7 @@ local function AddPlayerIdentitySection(tooltip)
 	tooltip:AddLine(raceString .. " | " .. colorize(classStr, classToColor(classToken)))
 	tooltip:AddLine("Level: " .. level .. " | iLvl: " .. ilvl .. " | Weapon: " .. avgWeapon)
 
-	if Addon.IsInLegionTimerunnerMode() then
+	if Addon.IsInLegionTimerunningMode() then
 		tooltip:AddSeparator(3, 0, 0, 0, 0)
 		local threads = colorize(Addon.FormatWithCommasToThousands(totalThreads) .. " Threads", Colors.WowToken)
 		local unbound =
@@ -184,7 +182,7 @@ local PlayerView = {}
 ---Populate the tooltip for the current player.
 ---@param tooltip table
 function PlayerView:Populate(tooltip)
-	if Addon.IsInLegionTimerunnerMode() then
+	if Addon.IsInLegionTimerunningMode() then
 		AddPlayerIdentitySection(tooltip)
 		AddArtifactWeaponSection(tooltip)
 		AddInfinitePowerSection(tooltip)

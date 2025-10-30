@@ -24,7 +24,7 @@ local Stats = Addon.StatsTracker
 ---Post-process unit tooltips to inject Threads and Stats information.
 ---@param tooltip GameTooltip
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
-	if not Addon.IsInLegionTimerunnerMode() then
+	if not Addon.IsInLegionTimerunningMode() then
 		return
 	end
 
