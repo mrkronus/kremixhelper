@@ -108,7 +108,7 @@ local function AddSortableHeader(tooltip)
 
     local headers = {
         { key = "role",          label = "Role"    },
-        { key = "level",         label = "Lvl"     },
+        { key = "level",         label = "Level"   },
         { key = "name",          label = "Name"    },
         { key = "realm",         label = "Realm"   },
         { key = "totalThreads",  label = "Threads" },
@@ -128,7 +128,7 @@ end
 --------------------------------------------------------------------------------
 
 local function AddPartyRows(tooltip)
-    tooltip:SetColumnLayout(6, "LEFT", "CENTER", "LEFT", "LEFT", "RIGHT", "RIGHT")
+    tooltip:SetColumnLayout(6, "CENTER", "CENTER", "LEFT", "LEFT", "RIGHT", "CENTER")
     AddSortableHeader(tooltip)
 
     local data = GroupMonitor:GetGroupData()
