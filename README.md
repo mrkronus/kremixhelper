@@ -1,47 +1,23 @@
 # K Remix Helper
 
-### Quality‑of‑life tools for the Legion Remix event
-
-**K Remix Helper** is a lightweight addon that smooths out some of the rough edges of Legion Remix. It adds practical UI panels and tooltips, automates repetitive steps, and gives you quick access to the information you actually need while playing.
-
----
+**Smooth out the rough edges of Legion Remix with practical UI panels, tooltips, and automation.**  
+K Remix Helper reduces micromanagement, handles routine tasks, and surfaces the information you actually need — so you can focus on playing.
 
 ## ✨ Features
 
-- **Auto Scrapper Panel**  
-  Adds a side panel to the Scrapping Machine with a one‑click Fill All button. Options let you auto‑fill when the machine is empty and protect higher‑item‑level gear from being scrapped.
+*   **Auto Scrapper Panel** – Adds a side panel with one‑click Fill All and options to auto‑fill, filter based on item rarity, and protect higher‑level gear
+*   **Smart Tooltips** – Show Threads totals, Infinite Power breakdowns, and Limits Unbound ranks when hovering over other players
+*   **Minimap / Databroker Icon** – Quick access to detailed info at a glance
+*   **Group View** – Integrated party/raid member data with sortable columns
+*   **Objectives View** – Displays active Infinite Research quests in a clear list
+*   Optional **Talent Alert Suppression** – Hides Blizzard’s "new talent" alerts and tutorials during Remix's accelerated leveling
 
-- **Smart Tooltips**  
-  Player and unit tooltips show Threads totals, Infinite Power stat breakdowns, and Limits Unbound ranks. Group and objectives views are available directly from the minimap tooltip.
+***
 
-- **Minimap Icon & Tooltip**  
-  A minimap button provides quick access to addon options. Hovering shows a detailed tooltip with Threads, currencies, stats, and shortcuts to group and objectives info.
+_This addon is in beta and under active development. Feedback is welcome!_
 
-- **Group and Objectives Views**  
-  Integrated tooltip views display party/raid Threads data with sortable columns, and list active Infinite Research quests
+If you like this addon, check out my other mods:
 
-- **Talent Alert Suppression**  
-  Suppresses Blizzard’s “new talent available” alerts and tutorial popups, keeping your UI clear during Remix's accelerated leveling speed.
-
----
-
-## 🛠️ Setup
-
-- Install like any other addon.  
-- A minimap button will appear automatically.  
-- Right‑click the icon for options.  
-- Works out of the box — no extra configuration required.
-
----
-
-## 💡 Tips
-
-- Enable **Auto Fill When Empty** in the scrapper panel if you want the machine to keep itself stocked automatically.  
-- Hover over the minimap icon for a snapshot of your Threads, currencies, and stats.  
-- Use the tooltip sub‑menus to quickly check group info or active objectives.
-
----
-
-## 📌 Summary
-
-K Remix Helper reduces micromanagement in Legion Remix. It handles the routine tasks, surfaces useful information, and leaves you free to focus on playing the event.
+*   [K Horrific Visions](https://www.curseforge.com/wow/addons/k-horrific-visions)
+*   [Kollector](https://www.curseforge.com/wow/addons/Kollector)
+*   [K Raid Skip Tracker](https://www.curseforge.com/wow/addons/k-raid-skip-tracker)
