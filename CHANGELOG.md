@@ -4,6 +4,13 @@
 - Updating the layout of the Objective tracker to be easier to read and more useful
 - Added support to click on the quest item in the list to open to that quest
 - A number of small UX tweaks to various controls (related to positioning, spacing, etc)
+- Fixed tank icons in group view
+- Fixed lack of role icons when soloing in group view
+- Added a context menu to group view when clicking on a group member
+- Slight restyling of the group view
+- Fixed the lua error when clicking on an empty node in the Scrapper UI
+- Fixed the flickering tooltips in the Scrapper UI
+- Revamped tooltip positioning across the board
 
 
 ### Version 11.2.5.4 Beta

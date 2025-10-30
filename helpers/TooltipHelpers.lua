@@ -32,53 +32,40 @@ local COST_PER_RANK = 50000
 local INV_MISC_QUESTIONMARK = 134400
 
 --------------------------------------------------------------------------------
--- Content Helpers
+-- Toopltip Positioning Helpers
 --------------------------------------------------------------------------------
 
----Add a section heading with separators and font changes.
----@param tooltip table
----@param sectionName string
-function TooltipHelpers.AddSectionHeading(tooltip, sectionName, shouldAddGapAbove)
-	if shouldAddGapAbove == nil then
-		-- defualt to true
-		shouldAddGapAbove = true
+---@param tooltip Frame GameTooltip or LibQTip tooltip
+---@param region Frame The cell/frame to anchor to
+function TooltipHelpers.PositionTooltip(tooltip, region)
+	if not (tooltip and region and region:IsShown()) then
+		return
 	end
-	if shouldAddGapAbove then
-		tooltip:AddSeparator(10, 0, 0, 0, 0)
-	end
-	tooltip:SetFont(Fonts.Heading)
-	local currentLine = tooltip:AddLine()
-	tooltip:SetCell(currentLine, 1, colorize(sectionName, Colors.Header), nil, "LEFT", tooltip:GetColumnCount())
-	tooltip:AddSeparator()
-	tooltip:AddSeparator(3, 0, 0, 0, 0)
-	tooltip:SetFont(Fonts.MainText)
-end
 
----Position a tooltip (GameTooltip or LibQTip) relative to a cell,
----choosing left or right side of the screen.
----@param tip table The tooltip frame (e.g. GameTooltip)
----@param cell table The cell/frame to anchor to
-function TooltipHelpers.PositionTooltip(tip, cell)
-	local x = cell:GetCenter()
+	local x, y = region:GetCenter()
+	if not x or not y then
+		return
+	end
+
 	local screenWidth = UIParent:GetWidth()
 
-	tip:ClearAllPoints()
-	if x < screenWidth / 2 then
-		tip:SetPoint("LEFT", cell, "TOPRIGHT", 0, 0)
-	else
-		tip:SetPoint("RIGHT", cell, "TOPLEFT", 0, 0)
-	end
-end
+	tooltip:ClearAllPoints()
 
----Attach a tooltip script to a line.
----@param tooltip table
----@param lineIndex number
----@param onEnter fun(cell: Frame)
-function TooltipHelpers.AddTooltipToLine(tooltip, lineIndex, onEnter)
-	tooltip:SetLineScript(lineIndex, "OnEnter", onEnter)
-	tooltip:SetLineScript(lineIndex, "OnLeave", function()
-		GameTooltip:Hide()
-	end)
+	-- GameTooltip needs an owner
+	if tooltip:IsObjectType("GameTooltip") then
+		tooltip:SetOwner(region, "ANCHOR_NONE")
+	end
+
+	-- Decide left/right side
+	if x < screenWidth / 2 then
+		-- Region is on the left half: put tooltip to the right
+		tooltip:SetPoint("LEFT", region, "RIGHT", 0, 0)
+		tooltip:SetPoint("CENTER", region, "CENTER", 0, 0)
+	else
+		-- Region is on the right half: put tooltip to the left
+		tooltip:SetPoint("RIGHT", region, "LEFT", 0, 0)
+		tooltip:SetPoint("CENTER", region, "CENTER", 0, 0)
+	end
 end
 
 ---Attach a GameTooltip that shows a hyperlink when hovering a line or cell,
@@ -93,42 +80,46 @@ function TooltipHelpers.AddHyperlinkTooltip(tooltip, lineIndex, colIndex, hyperl
 			return
 		end
 
-		local x, y = region:GetCenter()
-		local screenWidth = UIParent:GetWidth()
-		local screenHeight = UIParent:GetHeight()
-
-		-- Fully controlled positioning: use ANCHOR_NONE, then SetPoint
-		GameTooltip:ClearAllPoints()
-		GameTooltip:SetOwner(region, "ANCHOR_NONE")
-
-		-- Left/right beside the region
-		if x < screenWidth / 2 then
-			GameTooltip:SetPoint("LEFT", region, "RIGHT", 0, 0)
-		else
-			GameTooltip:SetPoint("RIGHT", region, "LEFT", 0, 0)
-		end
-
-		-- Vertical centering relative to the region's Y
-		local offsetY = y - (screenHeight / 2)
-		GameTooltip:SetPoint("CENTER", UIParent, "CENTER", 0, offsetY)
-
+		TooltipHelpers.PositionTooltip(GameTooltip, region)
 		GameTooltip:SetHyperlink(hyperlink)
 		GameTooltip:Show()
 	end
 
 	local function hideTooltip()
-		tooltip:SetLineColor(line, 0, 0, 0, 0)
 		GameTooltip:Hide()
 	end
 
 	if colIndex then
-		-- Cell-level hover
 		tooltip:SetCellScript(lineIndex, colIndex, "OnEnter", showTooltip)
 		tooltip:SetCellScript(lineIndex, colIndex, "OnLeave", hideTooltip)
 	else
-		-- Line-level hover
 		tooltip:SetLineScript(lineIndex, "OnEnter", showTooltip)
 		tooltip:SetLineScript(lineIndex, "OnLeave", hideTooltip)
+	end
+end
+
+---Attach a GameTooltip showing a currency by ID.
+---@param tooltip table
+---@param lineIndex number
+---@param colIndex? number
+---@param currencyID number
+function TooltipHelpers.AddCurrencyTooltip(tooltip, lineIndex, colIndex, currencyID)
+	local function show(cellFrame)
+		TooltipHelpers.PositionTooltip(GameTooltip, cellFrame)
+		GameTooltip:SetCurrencyByID(currencyID)
+		GameTooltip:Show()
+	end
+
+	local function hide()
+		GameTooltip:Hide()
+	end
+
+	if colIndex then
+		tooltip:SetCellScript(lineIndex, colIndex, "OnEnter", show)
+		tooltip:SetCellScript(lineIndex, colIndex, "OnLeave", hide)
+	else
+		tooltip:SetLineScript(lineIndex, "OnEnter", show)
+		tooltip:SetLineScript(lineIndex, "OnLeave", hide)
 	end
 end
 
@@ -156,6 +147,29 @@ function TooltipHelpers.AddSubTooltipLine(tooltip, label, populateFunc)
 	end)
 end
 
+--------------------------------------------------------------------------------
+-- Content Helpers
+--------------------------------------------------------------------------------
+
+---Add a section heading with separators and font changes.
+---@param tooltip table
+---@param sectionName string
+function TooltipHelpers.AddSectionHeading(tooltip, sectionName, shouldAddGapAbove)
+	if shouldAddGapAbove == nil then
+		-- defualt to true
+		shouldAddGapAbove = true
+	end
+	if shouldAddGapAbove then
+		tooltip:AddSeparator(10, 0, 0, 0, 0)
+	end
+	tooltip:SetFont(Fonts.Heading)
+	local currentLine = tooltip:AddLine()
+	tooltip:SetCell(currentLine, 1, colorize(sectionName, Colors.Header), nil, "LEFT", tooltip:GetColumnCount())
+	tooltip:AddSeparator()
+	tooltip:AddSeparator(3, 0, 0, 0, 0)
+	tooltip:SetFont(Fonts.MainText)
+end
+
 ---Add a currency line to the tooltip if the player has any of it.
 ---@param tooltip table
 ---@param currencyID number
@@ -169,46 +183,6 @@ function TooltipHelpers.AddCurrencyLine(tooltip, currencyID)
 
 		-- Use a dedicated helper for currencies
 		TooltipHelpers.AddCurrencyTooltip(tooltip, line, nil, currencyID)
-	end
-end
-
----Attach a GameTooltip showing a currency by ID.
----@param tooltip table
----@param lineIndex number
----@param colIndex? number
----@param currencyID number
-function TooltipHelpers.AddCurrencyTooltip(tooltip, lineIndex, colIndex, currencyID)
-	local function show(cellFrame)
-		local x, y = cellFrame:GetCenter()
-		local screenWidth = UIParent:GetWidth()
-		local screenHeight = UIParent:GetHeight()
-
-		GameTooltip:ClearAllPoints()
-		GameTooltip:SetOwner(cellFrame, "ANCHOR_NONE")
-
-		if x < screenWidth / 2 then
-			GameTooltip:SetPoint("LEFT", cellFrame, "RIGHT", 0, 0)
-		else
-			GameTooltip:SetPoint("RIGHT", cellFrame, "LEFT", 0, 0)
-		end
-
-		local offsetY = y - (screenHeight / 2)
-		GameTooltip:SetPoint("CENTER", UIParent, "CENTER", 0, offsetY)
-
-		GameTooltip:SetCurrencyByID(currencyID)
-		GameTooltip:Show()
-	end
-
-	local function hide()
-		GameTooltip:Hide()
-	end
-
-	if colIndex then
-		tooltip:SetCellScript(lineIndex, colIndex, "OnEnter", show)
-		tooltip:SetCellScript(lineIndex, colIndex, "OnLeave", hide)
-	else
-		tooltip:SetLineScript(lineIndex, "OnEnter", show)
-		tooltip:SetLineScript(lineIndex, "OnLeave", hide)
 	end
 end
 

@@ -36,9 +36,10 @@ local CONFIG = {
 --------------------------------------------------------------------------------
 
 local ROLE_ICONS = {
-	TANK = "|TInterface\\GroupFrame\\UI-Group-LeaderIcon:16:16:0:0:64:64:0:32:0:32|t",
+	TANK = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:0:19:22:41|t",
 	HEALER = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:1:20|t",
 	DAMAGER = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:22:41|t",
+	NONE = "|TInterface\\Icons\\INV_Misc_QuestionMark:16|t",
 }
 
 ---Return icon texture string for a role.
@@ -89,6 +90,12 @@ local function BuildMember(unit)
 	local rank = math.floor(total / CONFIG.THREADS_PER_RANK)
 	local name, realm = UnitName(unit)
 	local _, classFile = UnitClass(unit)
+	local role = UnitGroupRolesAssigned(unit)
+	if role == "NONE" and unit == "player" then
+		local spec = GetSpecialization()
+		local specRole = spec and GetSpecializationRole(spec)
+		role = specRole or "NONE"
+	end
 
 	return {
 		unit = unit,
@@ -96,7 +103,7 @@ local function BuildMember(unit)
 		realm = realm or GetRealmName(),
 		class = classFile,
 		level = UnitLevel(unit) or "?",
-		role = UnitGroupRolesAssigned(unit),
+		role = role,
 		totalThreads = total,
 		limitsUnboundRank = rank,
 	}
