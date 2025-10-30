@@ -11,13 +11,12 @@
   Notes:
     - Calls AutoScrapper:FillNextBatch() only on open, Fill button, or empty
     - Uses AceDB profile values if available
+    - All functions are namespaced under Addon.AutoScrapperFrame
 -------------------------------------------------------------------------------]]
---
 
 local _, Addon = ...
 
 local kprint = Addon.Settings.kprint
-
 local AutoScrapper = Addon.AutoScrapper
 local TooltipHelpers = Addon.TooltipHelpers
 
@@ -359,12 +358,11 @@ function AutoScrapperFrame:ReevaluateScrapper()
 	if not IsInLegionTimerunnerMode() then
 		return
 	end
-
 	if self._reevaluating then
 		return
 	end
-	self._reevaluating = true
 
+	self._reevaluating = true
 	self:Refresh()
 
 	if ScrappingMachineFrame and ScrappingMachineFrame:IsShown() and GetAutoFill() then
@@ -380,7 +378,7 @@ function AutoScrapperFrame:ReevaluateScrapper()
 			end
 
 			local pendingCount = 0
-			for i = 0, 8 do
+			for i = 0, SCRAPPING_MACHINE_SLOTS - 1 do
 				if C_ScrappingMachineUI.GetCurrentPendingScrapItemLocationByIndex(i) then
 					pendingCount = pendingCount + 1
 				end

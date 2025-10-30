@@ -8,7 +8,6 @@
     - Distinct from ThreadsTracker (aura scanning + persistence)
     - This module focuses on group roster snapshots
 -------------------------------------------------------------------------------]]
---
 
 local _, Addon = ...
 local ThreadsTracker = Addon.ThreadsTracker

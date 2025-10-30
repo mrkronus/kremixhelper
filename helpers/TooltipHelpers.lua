@@ -6,9 +6,7 @@
     - Provide formatting helpers for Infinite Power and Limits Unbound
   Notes:
     - All functions are namespaced under Addon.TooltipHelpers
-    - Defensive coding ensures safe fallbacks
 -------------------------------------------------------------------------------]]
---
 
 local _, Addon = ...
 
@@ -25,16 +23,20 @@ local LibQTip = Addon.LibQTip
 local TooltipHelpers = {}
 Addon.TooltipHelpers = TooltipHelpers
 
+--------------------------------------------------------------------------------
 -- Constants
+--------------------------------------------------------------------------------
+
 local INFINITE_POWER_CURRENCY_ID = 3268
 local COST_TO_UNLOCK_TREE = 114125
 local COST_PER_RANK = 50000
 local INV_MISC_QUESTIONMARK = 134400
 
 --------------------------------------------------------------------------------
--- Toopltip Positioning Helpers
+-- Tooltip Positioning Helpers
 --------------------------------------------------------------------------------
 
+---Position a tooltip relative to a region with smart left/right anchoring.
 ---@param tooltip Frame GameTooltip or LibQTip tooltip
 ---@param region Frame The cell/frame to anchor to
 function TooltipHelpers.PositionTooltip(tooltip, region)
@@ -48,7 +50,6 @@ function TooltipHelpers.PositionTooltip(tooltip, region)
 	end
 
 	local screenWidth = UIParent:GetWidth()
-
 	tooltip:ClearAllPoints()
 
 	-- GameTooltip needs an owner
@@ -58,18 +59,15 @@ function TooltipHelpers.PositionTooltip(tooltip, region)
 
 	-- Decide left/right side
 	if x < screenWidth / 2 then
-		-- Region is on the left half: put tooltip to the right
 		tooltip:SetPoint("LEFT", region, "RIGHT", 0, 0)
 		tooltip:SetPoint("CENTER", region, "CENTER", 0, 0)
 	else
-		-- Region is on the right half: put tooltip to the left
 		tooltip:SetPoint("RIGHT", region, "LEFT", 0, 0)
 		tooltip:SetPoint("CENTER", region, "CENTER", 0, 0)
 	end
 end
 
----Attach a GameTooltip that shows a hyperlink when hovering a line or cell,
----with smart left/right anchoring and vertical centering.
+---Attach a GameTooltip that shows a hyperlink when hovering a line or cell.
 ---@param tooltip table    LibQTip tooltip
 ---@param lineIndex number Line index to attach
 ---@param colIndex? number Optional column index; if nil, attaches to the line
@@ -79,7 +77,6 @@ function TooltipHelpers.AddHyperlinkTooltip(tooltip, lineIndex, colIndex, hyperl
 		if not region or not hyperlink then
 			return
 		end
-
 		TooltipHelpers.PositionTooltip(GameTooltip, region)
 		GameTooltip:SetHyperlink(hyperlink)
 		GameTooltip:Show()
@@ -135,9 +132,7 @@ function TooltipHelpers.AddSubTooltipLine(tooltip, label, populateFunc)
 	tooltip:SetLineScript(line, "OnEnter", function(cell)
 		local subTip = LibQTip:Acquire("AddonSubTooltip", 1, "LEFT")
 		subTip:Clear()
-
 		TooltipHelpers.PositionTooltip(subTip, cell)
-
 		populateFunc(subTip)
 		subTip:Show()
 	end)
@@ -154,9 +149,10 @@ end
 ---Add a section heading with separators and font changes.
 ---@param tooltip table
 ---@param sectionName string
+---@param shouldAddGapAbove? boolean
 function TooltipHelpers.AddSectionHeading(tooltip, sectionName, shouldAddGapAbove)
 	if shouldAddGapAbove == nil then
-		-- defualt to true
+		-- default to true
 		shouldAddGapAbove = true
 	end
 	if shouldAddGapAbove then

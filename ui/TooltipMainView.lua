@@ -5,8 +5,8 @@
   Notes:
     - Sections: Player identity, Artifact weapon, Infinite Power, Currency, Submenus
     - Falls back gracefully if not in Legion Remix
+    - All functions are namespaced under Addon.PlayerView
 -------------------------------------------------------------------------------]]
---
 
 local _, Addon = ...
 
@@ -27,8 +27,6 @@ local LIMITS_UNBOUND_SPELL_ID = 1245947
 
 ---Add player identity section (name, class, level, ilvl, Threads).
 ---@param tooltip table
----Add player identity section (name, class, level, ilvl, Threads).
----@param tooltip table
 local function AddPlayerIdentitySection(tooltip)
 	local Threads = Addon.ThreadsTracker
 	local player = Addon.PlayerIdentity:Get()
@@ -40,7 +38,9 @@ local function AddPlayerIdentitySection(tooltip)
 	tooltip:SetCell(
 		headerLine,
 		1,
-		getClassIcon(classToken) .. " " .. colorize(player.name .. " - " .. player.realm, classToColor(classToken))
+		Addon.getClassIcon(classToken)
+			.. " "
+			.. colorize(player.name .. " - " .. player.realm, classToColor(classToken))
 	)
 	tooltip:SetCell(headerLine, 2, Addon.FactionIcons[faction])
 
@@ -89,7 +89,6 @@ local function AddArtifactWeaponSection(tooltip)
 			local label = iconMarkup .. " " .. w.text
 			local currentLine = tooltip:AddLine(label)
 
-			-- Use the generic hyperlink helper for the weapon link
 			Addon.TooltipHelpers.AddHyperlinkTooltip(tooltip, currentLine, nil, w.link)
 		end
 
@@ -108,7 +107,6 @@ local function AddArtifactWeaponSection(tooltip)
 			local lineText = string.format(traitFormat, totalIncreased, spellIcon, spellName)
 			local line = tooltip:AddLine(lineText)
 
-			-- Use the generic hyperlink helper for the spell
 			Addon.TooltipHelpers.AddHyperlinkTooltip(tooltip, line, nil, ("spell:%d"):format(spellID))
 		end
 	else

@@ -20,8 +20,11 @@ local InfiniteResearch = {}
 -- Telemetry
 --------------------------------------------------------------------------------
 
+---Toggle telemetry logging for Infinite Research.
 InfiniteResearch.TelemetryEnabled = true -- set false to silence logs
 
+---Print a telemetry message to chat or console.
+---@param msg string
 local function Print(msg)
 	if DEFAULT_CHAT_FRAME then
 		DEFAULT_CHAT_FRAME:AddMessage("|cff80ff80[IR]|r " .. msg)
@@ -34,16 +37,18 @@ end
 -- Classification
 --------------------------------------------------------------------------------
 
--- Titles containing these phrases are considered non-repeatable
+---Titles containing these phrases are considered non-repeatable.
 local NON_REPEATABLE_PATTERNS = {
 	"infinite research: special assignment",
 	"infinite research: self improvement",
 	"infinite research promotion",
-	"infinite research: special assignment",
 	"infinite research: no task too small",
 	"infinite research: timeworn keystone dungeon",
 }
 
+---Determine if a quest title indicates repeatability.
+---@param title string
+---@return boolean isRepeatable
 local function IsRepeatableByTitle(title)
 	local lower = title:lower()
 	for _, phrase in ipairs(NON_REPEATABLE_PATTERNS) do
@@ -59,7 +64,8 @@ end
 --------------------------------------------------------------------------------
 
 ---Get all active Infinite Research quests, grouped and sorted.
----@return table repeatable, table nonRepeatable
+---@return table repeatable List of repeatable quests
+---@return table nonRepeatable List of non-repeatable quests
 function InfiniteResearch:GetInfiniteResearchQuests()
 	local repeatable, nonRepeatable = {}, {}
 	local searchTerm = "infinite research"
@@ -96,9 +102,7 @@ function InfiniteResearch:GetInfiniteResearchQuests()
 			}
 
 			-- Classification by title
-			local isRepeatable = IsRepeatableByTitle(title)
-
-			if isRepeatable then
+			if IsRepeatableByTitle(title) then
 				table.insert(repeatable, quest)
 			else
 				table.insert(nonRepeatable, quest)

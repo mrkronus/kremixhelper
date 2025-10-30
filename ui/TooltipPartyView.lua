@@ -8,6 +8,8 @@
     - Left-click a row to whisper that player
     - Right-click a row to open the standard player context menu
     - Section header shows role counts (tank/healer/dps)
+  Notes:
+    - All functions are namespaced under Addon.PartyView
 -------------------------------------------------------------------------------]]
 
 local _, Addon = ...
@@ -186,7 +188,7 @@ local function AddPartyRows(tooltip)
 			end
 
 			tooltip:Hide()
-			MenuUtil.CreateContextMenu(UIParent, function(owner, root)
+			MenuUtil.CreateContextMenu(UIParent, function(_, root)
 				-- Line 1: Name (Level) in class color
 				local classColor = RAID_CLASS_COLORS[m.class] or NORMAL_FONT_COLOR
 				local headerText = ("|c%s%s (%s)|r"):format(classColor.colorStr, target, m.level or "?")
@@ -197,7 +199,7 @@ local function AddPartyRows(tooltip)
 				local limitsIcon = ("|T%d:0|t"):format(GroupMonitor:GetSpellIcon(LIMITS_UNBOUND_SPELL_ID))
 				local limitsText = tostring(m.limitsUnboundRank or 0) .. " " .. limitsIcon
 				local subline = ("|cffaaaaaa%s | %s|r"):format(threadsText, limitsText)
-				root:CreateTitle(subline) -- titles render smaller than buttons, good for subtext
+				root:CreateTitle(subline)
 
 				root:CreateDivider()
 

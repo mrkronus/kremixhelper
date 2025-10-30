@@ -6,6 +6,8 @@
     - Section header spans all 3 columns
     - Hover a row to highlight it
     - Click a row to open the quest in the quest log
+  Notes:
+    - All functions are namespaced under Addon.ObjectivesView
 -------------------------------------------------------------------------------]]
 
 local _, Addon = ...
@@ -29,8 +31,9 @@ local ICON_NORMAL_ACTIVE = "SmallQuestBang"
 local ICON_NORMAL_COMPLETE = "QuestTurnin"
 
 ---Return texture markup for the quest’s state.
----@param quest table
----@return string
+---@param quest table Quest data
+---@param isRepeatable boolean Whether the quest is repeatable
+---@return string markup Texture markup string
 function Addon.GetQuestIconMarkup(quest, isRepeatable)
 	if not quest or not quest.questID then
 		return ""
@@ -51,10 +54,11 @@ end
 --------------------------------------------------------------------------------
 
 ---Render a list of quests into the tooltip with a section heading.
----@param tooltip table
----@param heading string
----@param quests table[]
----@param isRepeatable boolean
+---@param tooltip table LibQTip tooltip
+---@param heading string Section heading text
+---@param quests table[] List of quest objects
+---@param color table RGB color table
+---@param isRepeatable boolean Whether the quests are repeatable
 local function RenderQuestGroup(tooltip, heading, quests, color, isRepeatable)
 	if not quests or #quests == 0 then
 		return
@@ -74,7 +78,6 @@ local function RenderQuestGroup(tooltip, heading, quests, color, isRepeatable)
 
 		-- Hover/click handlers on the quest title cell (column 2)
 		Addon.TooltipHelpers.AddHyperlinkTooltip(tooltip, line, 2, ("quest:%d"):format(quest.questID))
-
 		tooltip:SetCellScript(line, 2, "OnMouseDown", function()
 			if quest.questID then
 				QuestMapFrame_OpenToQuestDetails(quest.questID)
@@ -87,7 +90,6 @@ local function RenderQuestGroup(tooltip, heading, quests, color, isRepeatable)
 				local check = obj.finished and "|A:UI-QuestTracker-Tracker-Check-Glow:14:14|a " or ""
 				local text = obj.text or ""
 				local objLine = tooltip:AddLine()
-				-- indent objectives under the quest title
 				tooltip:SetCell(objLine, 2, check .. text, nil, "LEFT", tooltip:GetColumnCount() - 1)
 			end
 		else
@@ -101,6 +103,7 @@ local function RenderQuestGroup(tooltip, heading, quests, color, isRepeatable)
 				tooltip:GetColumnCount() - 1
 			)
 		end
+
 		tooltip:AddSeparator(3, 0, 0, 0, 0)
 	end
 end
@@ -113,10 +116,11 @@ end
 local ObjectivesView = {}
 
 ---Populate the objectives tooltip.
----@param tooltip table
+---@param tooltip table LibQTip tooltip
 function ObjectivesView:Populate(tooltip)
 	tooltip:EnableMouse(true)
 	tooltip:SetColumnLayout(3, "CENTER", "LEFT", "RIGHT")
+
 	if Addon.IsInLegionTimerunnerMode() then
 		local repeatable, nonRepeatable = InfiniteResearch:GetInfiniteResearchQuests()
 		RenderQuestGroup(tooltip, "Repeatable Quests", repeatable, Colors.WowToken, true)
